@@ -1,4 +1,4 @@
---CREATE DATABASE HumaneSociety
+CREATE DATABASE HumaneSociety
 
 USE HumaneSociety;
 
