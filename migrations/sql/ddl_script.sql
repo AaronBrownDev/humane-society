@@ -1,79 +1,321 @@
-CREATE DATABASE HumaneSociety
+CREATE DATABASE HumaneSociety;
+GO
 
 USE HumaneSociety;
+GO
 
-CREATE TABLE Dog (
-    DogID VARCHAR(32) NOT NULL,
-    DogName VARCHAR(32) NOT NULL,
-    IntakeDate DATETIME NOT NULL,
-    EstimatedBirthDate DATETIME NOT NULL,
-    Breed VARCHAR(32) NOT NULL,
-    Sex VARCHAR(8) CHECK (Sex IN ('Male', 'Female', 'Intersex')),
-    Color VARCHAR(32) NOT NULL,
-    CageNumber INT NOT NULL,
-    IsAdopted BIT DEFAULT 0,
-    CONSTRAINT PK_Dog PRIMARY KEY (DogID),
-)
+-- Schemas
+CREATE SCHEMA shelter;
 
-CREATE TABLE Medicine (
-    MedicineID INT NOT NULL,
-    MedicationName VARCHAR(32) NOT NULL,
-    Manufacturer VARCHAR(32) NOT NULL,
-    CONSTRAINT PK_Medicine PRIMARY KEY (MedicineID),
-)
+CREATE SCHEMA medical;
 
-CREATE TABLE DogPrescription (
-    DogID VARCHAR(32) NOT NULL FOREIGN KEY REFERENCES Dog(DogID),
-    MedicineID INT NOT NULL FOREIGN KEY REFERENCES Medicine(MedicineID),
-    Dosage DECIMAL(5,2) NOT NULL,
-    CONSTRAINT PK_DogPrescription PRIMARY KEY (DogID, MedicineID),
-)
+CREATE SCHEMA people;
 
-CREATE TABLE Person (
-    PersonID VARCHAR(32) NOT NULL,
-    FirstName VARCHAR(32) NOT NULL,
-    LastName VARCHAR(32) NOT NULL,
+-- Base Tables
+
+-- Person Table
+CREATE TABLE people.Person (
+    PersonID UNIQUEIDENTIFIER NOT NULL,
+    FirstName NVARCHAR(50) NOT NULL,
+    LastName NVARCHAR(50) NOT NULL,
     BirthDate DATE NOT NULL,
-    PhysicalAddress VARCHAR(100) NOT NULL,
-    MailingAddress VARCHAR(100) NOT NULL,
+    PhysicalAddress NVARCHAR(150) NOT NULL,
+    MailingAddress NVARCHAR(150) NOT NULL,
+    Email VARCHAR(100) NULL,
+    Phone VARCHAR(20) NULL,
     CONSTRAINT PK_Person PRIMARY KEY (PersonID),
-)
+);
 
-CREATE TABLE Adopter (
-    AdopterID VARCHAR(32) NOT NULL FOREIGN KEY REFERENCES Person(PersonID),
-    IsPetOwner BIT NOT NULL,
-    PetAllergies BIT NOT NULL,
-    HaveSurrended BIT NOT NULL,
+-- Index on LastName, FirstName for name searches
+CREATE INDEX IX_Person_Name ON people.Person(LastName, FirstName);
+
+-- Dog Table
+CREATE TABLE shelter.Dog (
+    DogID UNIQUEIDENTIFIER NOT NULL,
+    DogName NVARCHAR(50) NOT NULL,
+    IntakeDate DATE NOT NULL,
+    EstimatedBirthDate DATE NOT NULL,
+    Breed NVARCHAR(50) NOT NULL,
+    Sex VARCHAR(8) NOT NULL,
+    Color NVARCHAR(30) NOT NULL,
+    CageNumber INT NOT NULL,
+    IsAdopted BIT NOT NULL DEFAULT 0,
+    CONSTRAINT PK_Dog PRIMARY KEY (DogID),
+    CONSTRAINT CK_Dog_Sex CHECK (Sex IN ('Male', 'Female', 'Intersex')),
+);
+-- Index for looking up available dogs
+CREATE INDEX IX_Dog_Adoption ON shelter.Dog(IsAdopted);
+
+-- Medicine table
+CREATE TABLE medical.Medicine (
+    MedicineID INT IDENTITY(1,1) NOT NULL,
+    MedicationName NVARCHAR(50) NOT NULL,
+    Manufacturer NVARCHAR(50) NOT NULL,
+    Description NVARCHAR(200) NULL,
+    DosageUnit NVARCHAR(20) NULL, -- not sure if I need
+    CONSTRAINT PK_Medicine PRIMARY KEY (MedicineID),
+);
+
+-- Supply inventory
+-- COME BACK TO THIS. Want to use supply as a quantity thing and item name, desc, and category in another table solely meant for being used as a foreign key
+CREATE TABLE shelter.Supply (
+    ItemID UNIQUEIDENTIFIER NOT NULL,
+    Quantity INT NOT NULL,
+    ExpirationDate DATE DEFAULT NULL,
+    CONSTRAINT PK_Supply PRIMARY KEY (ItemID),
+);
+
+-- Person subtypes
+
+-- Adopter table
+CREATE TABLE people.Adopter (
+    AdopterID UNIQUEIDENTIFIER NOT NULL,
+    PetAllergies BIT NOT NULL DEFAULT 0,
+    HaveSurrendered BIT NOT NULL DEFAULT 0,
+    -- If home visits are done this can be added
     CONSTRAINT PK_Adopter PRIMARY KEY (AdopterID),
+    CONSTRAINT FK_Adopter_Person FOREIGN KEY (AdopterID)
+        REFERENCES people.Person(PersonID)
+        ON DELETE CASCADE,
+);
+
+-- Veterinarian table
+CREATE TABLE people.Veterinarian (
+    VeterinarianID UNIQUEIDENTIFIER NOT NULL,
+    CONSTRAINT PK_Veterinarian PRIMARY KEY (VeterinarianID),
+    CONSTRAINT FK_Veterinarian_Person FOREIGN KEY (VeterinarianID)
+        REFERENCES people.Person(PersonID)
+        ON DELETE CASCADE
+);
+
+-- Pet Surrenderer table
+CREATE TABLE people.PetSurrenderer (
+    SurrendererID UNIQUEIDENTIFIER NOT NULL,
+    CONSTRAINT PK_PetSurrenderer PRIMARY KEY (SurrendererID),
+    CONSTRAINT FK_PetSurrenderer_Person FOREIGN KEY (SurrendererID)
+        REFERENCES people.Person(PersonID)
+        ON DELETE CASCADE
+);
+
+-- Pet Owner table
+CREATE TABLE people.PetOwner (
+    PetOwnerID UNIQUEIDENTIFIER NOT NULL,
+    VetID UNIQUEIDENTIFIER NULL,
+    PetsSterilized BIT NOT NULL DEFAULT 0,
+    PetsVaccinated BIT NOT NULL DEFAULT 0,
+    HeartWormPreventionFromVet BIT NOT NULL DEFAULT 0,
+    CONSTRAINT PK_PetOwner PRIMARY KEY (PetOwnerID),
+    CONSTRAINT FK_PetOwner_Person FOREIGN KEY (PetOwnerID)
+        REFERENCES people.Person(PersonID)
+        ON DELETE CASCADE,
+    CONSTRAINT FK_PetOwner_Veterinarian FOREIGN KEY (VetID)
+        REFERENCES people.Veterinarian(VeterinarianID)
+        ON DELETE SET NULL
+);
+
+-- Volunteer table
+CREATE TABLE people.Volunteer (
+    VolunteerID UNIQUEIDENTIFIER NOT NULL,
+    VolunteerRole NVARCHAR(50) NOT NULL,
+    StartDate DATE NOT NULL DEFAULT GETDATE(),
+    EndDate DATE NULL,
+    EmergencyContactName NVARCHAR(100) NULL, -- In case of emergency
+    EmergencyContactPhone VARCHAR(20) NULL,
+    IsActive BIT NOT NULL DEFAULT 1,
+    CONSTRAINT PK_Volunteer PRIMARY KEY (VolunteerID),
+    CONSTRAINT FK_Volunteer_Person FOREIGN KEY (VolunteerID)
+        REFERENCES people.Person(PersonID)
+        ON DELETE CASCADE
 )
 
-CREATE TABLE PetOwnerAdopter (
-    PetOwnerID VARCHAR(32) NOT NULL FOREIGN KEY REFERENCES Adopter(AdopterID),
-    PetsSterilized BIT NOT NULL,
-    PetsVaccinated BIT NOT NULL,
-    HeartWormPreventionFromVet BIT NOT NULL,
-    CONSTRAINT PK_PetOwnerAdopter PRIMARY KEY (PetOwnerID),
+-- Relationship tables
+
+-- Dog Prescription table
+
+CREATE TABLE medical.DogPrescription (
+    PrescriptionID INT IDENTITY(1, 1) NOT NULL,
+    DogID UNIQUEIDENTIFIER NOT NULL,
+    MedicineID INT NOT NULL,
+    Dosage DECIMAL(5,2) NOT NULL,
+    -- Dosage unit might be pulled from medicine table or vise versa
+    Frequency NVARCHAR(50) NULL, -- might default to once a day, not sure yet
+    StartDate DATE NOT NULL DEFAULT GETDATE(),
+    EndDate DATE NULL,
+    Notes NVARCHAR(200) NULL,
+    PrescribedBy UNIQUEIDENTIFIER, -- References to vet
+    CONSTRAINT PK_DogPrescription PRIMARY KEY (PrescriptionID),
+    CONSTRAINT FK_DogPrescription_Dog FOREIGN KEY (DogID)
+        REFERENCES shelter.Dog(DogID)
+        ON DELETE CASCADE,
+    CONSTRAINT FK_DogPrescription_Medicine FOREIGN KEY (MedicineID)
+        REFERENCES medical.Medicine(MedicineID)
+        ON DELETE CASCADE,
+    CONSTRAINT FK_DogPrescription_Veterinarian FOREIGN KEY (PrescribedBy)
+        REFERENCES people.Veterinarian(VeterinarianID)
+        ON DELETE SET NULL
 )
 
-CREATE TABLE AdopterPets (
-    PetOwnerID VARCHAR(32) NOT NULL FOREIGN KEY REFERENCES PetOwnerAdopter(PetOwnerID),
-    PetName VARCHAR(32) NOT NULL,
-    PetBreed VARCHAR(32) NOT NULL,
+-- Create unique constraint for dog and medicine combination
+CREATE UNIQUE INDEX UQ_DogPrescription_DogMedicine
+    ON medical.DogPrescription(DogID, MedicineID, StartDate);
+
+-- Pet Owner's Pets table
+CREATE TABLE people.PetOwnerPets (
+    PetID INT IDENTITY(1,1) NOT NULL,
+    PetOwnerID UNIQUEIDENTIFIER NOT NULL,
+    PetName NVARCHAR(50) NOT NULL,
+    PetType NVARCHAR(20) DEFAULT 'Dog', -- Specie
+    PetBreed NVARCHAR(50) NOT NULL, -- Might only apply when the pet is dog so still a WIP
+    Sex VARCHAR(8) NULL,
     OwnershipDate DATE NOT NULL,
-    LivingSpace VARCHAR(7) CHECK (LivingSpace IN ('Indoor', 'Outdoor', 'Both')),
-    CONSTRAINT PK_AdopterPets PRIMARY KEY (PetOwnerID, PetName)
+    LivingSpace VARCHAR(7) NOT NULL,
+    CONSTRAINT PK_PetOwnerPets PRIMARY KEY (PetID),
+    CONSTRAINT FK_PetOwnerPets_PetOwner FOREIGN KEY (PetOwnerID)
+        REFERENCES people.PetOwner(PetOwnerID)
+        ON DELETE CASCADE,
+    CONSTRAINT CK_PetOwnerPets_LivingSpace CHECK (LivingSpace IN ('Indoor', 'Outdoor', 'Both')),
+    CONSTRAINT CK_PetOwnerPets_Sex CHECK (Sex IN ('Male', 'Female', 'Intersex'))
+);
+
+-- Surrender Form table
+CREATE TABLE shelter.SurrenderForm (
+    SurrenderFormID INT IDENTITY(1,1) NOT NULL,
+    SurrendererID UNIQUEIDENTIFIER NOT NULL,
+    FormDate DATETIME2(0) NOT NULL DEFAULT GETDATE(),
+    DogName NVARCHAR(50) NOT NULL,
+    DogAge INT NOT NULL,
+    WeightInPounds DECIMAL(5,2) NOT NULL,
+    Sex VARCHAR(8) NOT NULL,
+    Breed NVARCHAR(50) NULL,
+    Color NVARCHAR(30) NULL,
+    LivingSpace VARCHAR(7) NOT NULL,
+    OwnershipDate DATE NOT NULL,
+    VetID UNIQUEIDENTIFIER NULL,
+    LastVetVisit DATE NULL,
+    GoodWithChildren BIT NOT NULL DEFAULT 0,
+    GoodWithDogs BIT NOT NULL DEFAULT 0,
+    GoodWithCats BIT NOT NULL DEFAULT 0,
+    GoodWithStrangers BIT NOT NULL DEFAULT 0,
+    HouseTrained BIT NOT NULL DEFAULT 0,
+    Sterilized BIT NOT NULL DEFAULT 0,
+    MicroChipNumber VARCHAR(15) NULL,
+    MedicalProblems NVARCHAR(500) NULL,
+    BiteHistory NVARCHAR(500) NULL,
+    Reason NVARCHAR(500) NOT NULL,
+    ProcessedByVolunteerID UNIQUEIDENTIFIER NULL, -- Logs who finalizes form
+    ProcessingDate DATETIME2(0) NULL,
+    ResultingDogID UNIQUEIDENTIFIER NULL,
+    Status VARCHAR(20) DEFAULT 'Pending',
+    CONSTRAINT PK_SurrenderForm PRIMARY KEY (SurrenderFormID),
+    CONSTRAINT FK_SurrenderForm_PetSurrenderer FOREIGN KEY (SurrendererID)
+       REFERENCES people.PetSurrenderer(SurrendererID)
+       ON DELETE CASCADE,
+    CONSTRAINT FK_SurrenderForm_Veterinarian FOREIGN KEY (VetID)
+       REFERENCES people.Veterinarian(VeterinarianID)
+       ON DELETE SET NULL,
+    CONSTRAINT FK_SurrenderForm_Volunteer FOREIGN KEY (ProcessedByVolunteerID)
+       REFERENCES people.Volunteer(VolunteerID)
+       ON DELETE SET NULL,
+    CONSTRAINT FK_SurrenderForm_Dog FOREIGN KEY (ResultingDogID)
+       REFERENCES shelter.Dog(DogID)
+       ON DELETE SET NULL,
+    CONSTRAINT CK_SurrenderForm_Sex CHECK (Sex IN ('Male', 'Female', 'Intersex')),
+    CONSTRAINT CK_SurrenderForm_LivingSpace CHECK (LivingSpace IN ('Indoor', 'Outdoor', 'Both')),
+    CONSTRAINT CK_SurrenderForm_Status CHECK (Status IN ('Pending', 'Approved', 'Rejected', 'Completed'))
+);
+
+
+-- Adoption Form
+CREATE TABLE shelter.AdoptionForm (
+    AdoptionFormID INT IDENTITY(1,1) NOT NULL,
+    AdopterID UNIQUEIDENTIFIER NOT NULL,
+    InterestedPetID UNIQUEIDENTIFIER NOT NULL,
+    FormDate DATETIME2(0) NOT NULL DEFAULT GETDATE(),
+    HomeVisitDate DATE NULL, -- If humane society checks the home first then this stays but for now I haven't looked into if they do that
+    ProcessedByVolunteerID UNIQUEIDENTIFIER NULL, -- Logs who finalizes form
+    ProcessingDate DATETIME2(0) NULL,
+    Status VARCHAR(20) NOT NULL DEFAULT 'Pending',
+    RejectionReason NVARCHAR(200) NULL,
+    CONSTRAINT PK_AdoptionForm PRIMARY KEY (AdoptionFormID),
+    CONSTRAINT FK_AdoptionForm_Adopter FOREIGN KEY (AdopterID)
+        REFERENCES people.Adopter(AdopterID)
+        ON DELETE CASCADE,
+    CONSTRAINT FK_AdoptionForm_Dog FOREIGN KEY (InterestedPetID)
+        REFERENCES shelter.Dog(DogID)
+        ON DELETE CASCADE,
+    CONSTRAINT FK_AdoptionForm_Volunteer FOREIGN KEY (ProcessedByVolunteerID)
+        REFERENCES people.Volunteer(VolunteerID)
+        ON DELETE SET NULL,
+    CONSTRAINT CK_AdoptionForm_Status CHECK (Status IN ('Pending', 'HomeVisitScheduled', 'Approved', 'Rejected', 'Completed'))
+);
+
+-- Create unique constraint on adopter and dog
+CREATE UNIQUE INDEX UQ_AdoptionForm_AdopterDog
+    ON shelter.AdoptionForm(AdopterID, InterestedPetID)
+    WHERE Status IN ('Pending', 'HomeVisitScheduled', 'Approved');
+
+-- Volunteer Form table
+-- Need to clean up this table and find better names for some columns
+CREATE TABLE shelter.VolunteerForm (
+    VolunteerFormID INT IDENTITY(1,1) NOT NULL ,
+    ApplicantID UNIQUEIDENTIFIER NOT NULL,
+    FormDate DATETIME2(0) NOT NULL DEFAULT GETDATE(),
+    WillingToPromoteSterilizationAndPetEducation BIT NOT NULL, -- Need to find better name
+    ShiftAvailable NVARCHAR(500),
+    BelieveInBreeding BIT NOT NULL, -- Need to find better name
+    WillingToCleanKennelsAndYard BIT NOT NULL, -- Need to find better name
+    WillingToBrush BIT NOT NULL, -- Need to find better name
+    DogAllergies BIT NOT NULL,
+    AnyLimitations BIT NOT NULL, -- like disabilities
+    ForCommunityServiceHours BIT NOT NULL,
+    NeededCommunityServiceHours BIT NULL,
+    HowDidYouHearAboutUs NVARCHAR(500) NOT NULL,
+    QuestionsAndComments NVARCHAR(500) NULL,
+    ProcessedByVolunteerID UNIQUEIDENTIFIER NULL, -- Logs who finalizes form
+    ProcessingDate DATETIME2(0) NULL,
+    Status VARCHAR(20) NOT NULL DEFAULT 'Pending',
+    RejectionReason NVARCHAR(200) NULL,
+    CONSTRAINT PK_VolunteerForm PRIMARY KEY (VolunteerFormID),
+    CONSTRAINT FK_VolunteerForm_Person FOREIGN KEY (ApplicantID)
+        REFERENCES people.Person(PersonID)
+        ON DELETE CASCADE,
+    CONSTRAINT FK_VolunteerForm_Volunteer FOREIGN KEY (ProcessedByVolunteerID)
+        REFERENCES people.Volunteer(VolunteerID)
+        ON DELETE SET NULL,
+    CONSTRAINT CK_VolunteerForm_Status CHECK (Status IN ('Pending', 'Approved', 'Rejected', 'Completed')),
 )
 
-CREATE TABLE AdoptionForm (
-    AdopterID VARCHAR(32) FOREIGN KEY REFERENCES Adopter(AdopterID),
-    InterestedPetID VARCHAR(32) FOREIGN KEY REFERENCES Dog(DogID),
-    FormDate DATETIME DEFAULT GETDATE(),
-    Status VARCHAR(10) CHECK (Status IN ('Pending', 'Approved', 'Rejected')),
-    CONSTRAINT PK_AdoptionForm PRIMARY KEY (AdopterID, InterestedPetID)
-)
+-- Volunteer Schedule table
+CREATE TABLE people.VolunteerSchedule (
+    ScheduleID INT IDENTITY(1,1) NOT NULL,
+    VolunteerID UNIQUEIDENTIFIER NOT NULL,
+    ScheduleDate DATE NOT NULL,
+    StartTime TIME NOT NULL,
+    EndTime TIME NOT NULL,
+    TaskDescription NVARCHAR(100) NULL,
+    Status VARCHAR(20) DEFAULT 'Scheduled',
+    CONSTRAINT PK_VolunteerSchedule PRIMARY KEY (ScheduleID),
+    CONSTRAINT FK_VolunteerSchedule_Volunteer FOREIGN KEY (VolunteerID)
+        REFERENCES people.Volunteer(VolunteerID)
+        ON DELETE CASCADE,
+    CONSTRAINT CK_VolunteerSchedule_Status CHECK (Status IN ('Scheduled', 'Completed', 'Cancelled', 'NoShow')),
+    CONSTRAINT CK_VolunteerSchedule_Times CHECK (EndTime > StartTime)
+);
 
-CREATE TABLE Employee (
-    EmployeeID VARCHAR(32) NOT NULL FOREIGN KEY REFERENCES Person(PersonID),
-    EmployeeRole VARCHAR(32) NOT NULL,
-    CONSTRAINT PK_Employee PRIMARY KEY (EmployeeID),
-)
+-- Create a view for available dogs
+CREATE VIEW shelter.AvailableDogs AS
+SELECT
+    d.DogID,
+    d.DogName,
+    d.IntakeDate,
+    d.EstimatedBirthDate,
+    DATEDIFF(YEAR, d.EstimatedBirthDate, GETDATE()) AS AgeInYears,
+    d.Breed,
+    d.Sex,
+    d.Color,
+    d.CageNumber
+FROM
+    shelter.Dog AS d
+WHERE
+    d.IsAdopted = 0;
+GO
