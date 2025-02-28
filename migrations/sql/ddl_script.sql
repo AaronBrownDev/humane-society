@@ -32,6 +32,7 @@ CREATE TABLE audit.ChangeLog (
     CONSTRAINT PK_ChangeLog PRIMARY KEY (LogID),
     CONSTRAINT CK_ChangeLog_Operation CHECK (Operation IN ('I', 'U', 'D'))
 );
+GO
 
 -- BASE TABLES
 
@@ -45,11 +46,13 @@ CREATE TABLE people.Person (
     MailingAddress NVARCHAR(150) NOT NULL,
     Email VARCHAR(100) NULL,
     Phone VARCHAR(20) NULL,
-    CONSTRAINT PK_Person PRIMARY KEY (PersonID),
+    CONSTRAINT PK_Person PRIMARY KEY (PersonID)
 );
+GO
 
 -- Index on LastName, FirstName for name searches
 CREATE INDEX IX_Person_Name ON people.Person(LastName, FirstName);
+GO
 
 -- Dog Table
 CREATE TABLE shelter.Dog (
@@ -63,11 +66,13 @@ CREATE TABLE shelter.Dog (
     CageNumber INT NOT NULL,
     IsAdopted BIT NOT NULL DEFAULT 0,
     CONSTRAINT PK_Dog PRIMARY KEY (DogID),
-    CONSTRAINT CK_Dog_Sex CHECK (Sex IN ('Male', 'Female', 'Intersex')),
+    CONSTRAINT CK_Dog_Sex CHECK (Sex IN ('Male', 'Female', 'Intersex'))
 );
+GO
 
 -- Index for looking up available dogs
 CREATE INDEX IX_Dog_Adoption ON shelter.Dog(IsAdopted);
+GO
 
 -- Medicine table
 CREATE TABLE medical.Medicine (
@@ -76,8 +81,9 @@ CREATE TABLE medical.Medicine (
     Manufacturer NVARCHAR(50) NOT NULL,
     Description NVARCHAR(200) NULL,
     DosageUnit NVARCHAR(20) NULL, -- not sure if I need
-    CONSTRAINT PK_Medicine PRIMARY KEY (MedicineID),
+    CONSTRAINT PK_Medicine PRIMARY KEY (MedicineID)
 );
+GO
 
 -- Item Catalog
 CREATE TABLE shelter.ItemCatalog (
@@ -90,6 +96,7 @@ CREATE TABLE shelter.ItemCatalog (
     CONSTRAINT PK_ItemCatalog PRIMARY KEY (ItemID),
     CONSTRAINT UK_ItemCatalog_Name UNIQUE (ItemName)
 );
+GO
 
 -- Supply inventory
 CREATE TABLE shelter.Supply (
@@ -106,11 +113,23 @@ CREATE TABLE shelter.Supply (
         ON DELETE CASCADE,
     CONSTRAINT CK_Supply_Quantity CHECK (Quantity >= 0)
 );
+GO
 
 -- Index for finding items by catalog ID
 CREATE INDEX IX_Supply_ItemID ON shelter.Supply(ItemID);
+GO
 
 -- PERSON SUBTYPES
+
+-- Veterinarian table
+CREATE TABLE people.Veterinarian (
+    VeterinarianID UNIQUEIDENTIFIER NOT NULL,
+    CONSTRAINT PK_Veterinarian PRIMARY KEY (VeterinarianID),
+    CONSTRAINT FK_Veterinarian_Person FOREIGN KEY (VeterinarianID)
+        REFERENCES people.Person(PersonID)
+        ON DELETE CASCADE
+);
+GO
 
 -- Adopter table
 CREATE TABLE people.Adopter (
@@ -124,15 +143,7 @@ CREATE TABLE people.Adopter (
         ON DELETE CASCADE,
     CONSTRAINT CK_Adopter_HomeStatus CHECK (HomeStatus IN ('Pending', 'Approved', 'Rejected'))
 );
-
--- Veterinarian table
-CREATE TABLE people.Veterinarian (
-    VeterinarianID UNIQUEIDENTIFIER NOT NULL,
-    CONSTRAINT PK_Veterinarian PRIMARY KEY (VeterinarianID),
-    CONSTRAINT FK_Veterinarian_Person FOREIGN KEY (VeterinarianID)
-        REFERENCES people.Person(PersonID)
-        ON DELETE CASCADE
-);
+GO
 
 -- Pet Surrenderer table
 CREATE TABLE people.PetSurrenderer (
@@ -142,6 +153,7 @@ CREATE TABLE people.PetSurrenderer (
         REFERENCES people.Person(PersonID)
         ON DELETE CASCADE
 );
+GO
 
 -- Pet Owner table
 CREATE TABLE people.PetOwner (
@@ -156,8 +168,9 @@ CREATE TABLE people.PetOwner (
         ON DELETE CASCADE,
     CONSTRAINT FK_PetOwner_Veterinarian FOREIGN KEY (VetID)
         REFERENCES people.Veterinarian(VeterinarianID)
-        ON DELETE SET NULL
+        ON DELETE NO ACTION -- Changed from CASCADE to NO ACTION to prevent multiple cascade paths
 );
+GO
 
 -- Volunteer table
 CREATE TABLE people.Volunteer (
@@ -174,13 +187,13 @@ CREATE TABLE people.Volunteer (
         ON DELETE CASCADE,
     CONSTRAINT CK_Volunteer_EmergencyContact CHECK
     ((EmergencyContactName IS NULL AND EmergencyContactPhone IS NULL) OR
-    (EmergencyContactName IS NOT NULL AND EmergencyContactPhone IS NOT NULL)), -- If emergency contact exists, phone # is required
-)
+    (EmergencyContactName IS NOT NULL AND EmergencyContactPhone IS NOT NULL)) -- If emergency contact exists, phone # is required
+);
+GO
 
 -- Relationship tables
 
 -- Dog Prescription table
-
 CREATE TABLE medical.DogPrescription (
     PrescriptionID INT IDENTITY(1, 1) NOT NULL,
     DogID UNIQUEIDENTIFIER NOT NULL,
@@ -191,7 +204,7 @@ CREATE TABLE medical.DogPrescription (
     StartDate DATE NOT NULL DEFAULT GETDATE(),
     EndDate DATE NULL,
     Notes NVARCHAR(200) NULL,
-    PrescribedBy UNIQUEIDENTIFIER, -- References to vet
+    PrescribedBy UNIQUEIDENTIFIER NULL, -- References to vet, made explicitly NULL
     CONSTRAINT PK_DogPrescription PRIMARY KEY (PrescriptionID),
     CONSTRAINT FK_DogPrescription_Dog FOREIGN KEY (DogID)
         REFERENCES shelter.Dog(DogID)
@@ -201,12 +214,14 @@ CREATE TABLE medical.DogPrescription (
         ON DELETE CASCADE,
     CONSTRAINT FK_DogPrescription_Veterinarian FOREIGN KEY (PrescribedBy)
         REFERENCES people.Veterinarian(VeterinarianID)
-        ON DELETE SET NULL
-)
+        ON DELETE NO ACTION -- Changed from SET NULL to NO ACTION
+);
+GO
 
 -- Create unique constraint for dog and medicine combination
 CREATE UNIQUE INDEX UQ_DogPrescription_DogMedicine
     ON medical.DogPrescription(DogID, MedicineID, StartDate);
+GO
 
 -- Pet Owner's Pets table
 CREATE TABLE people.PetOwnerPets (
@@ -225,6 +240,7 @@ CREATE TABLE people.PetOwnerPets (
     CONSTRAINT CK_PetOwnerPets_LivingSpace CHECK (LivingSpace IN ('Indoor', 'Outdoor', 'Both')),
     CONSTRAINT CK_PetOwnerPets_Sex CHECK (Sex IN ('Male', 'Female', 'Intersex'))
 );
+GO
 
 -- Surrender Form table
 CREATE TABLE shelter.SurrenderForm (
@@ -261,18 +277,18 @@ CREATE TABLE shelter.SurrenderForm (
        ON DELETE CASCADE,
     CONSTRAINT FK_SurrenderForm_Veterinarian FOREIGN KEY (VetID)
        REFERENCES people.Veterinarian(VeterinarianID)
-       ON DELETE SET NULL,
+       ON DELETE NO ACTION, -- Changed from SET NULL to NO ACTION
     CONSTRAINT FK_SurrenderForm_Volunteer FOREIGN KEY (ProcessedByVolunteerID)
        REFERENCES people.Volunteer(VolunteerID)
-       ON DELETE SET NULL,
+       ON DELETE NO ACTION, -- Changed from SET NULL to NO ACTION
     CONSTRAINT FK_SurrenderForm_Dog FOREIGN KEY (ResultingDogID)
        REFERENCES shelter.Dog(DogID)
-       ON DELETE SET NULL,
+       ON DELETE NO ACTION, -- Changed from SET NULL to NO ACTION
     CONSTRAINT CK_SurrenderForm_Sex CHECK (Sex IN ('Male', 'Female', 'Intersex')),
     CONSTRAINT CK_SurrenderForm_LivingSpace CHECK (LivingSpace IN ('Indoor', 'Outdoor', 'Both')),
     CONSTRAINT CK_SurrenderForm_Status CHECK (Status IN ('Pending', 'Approved', 'Rejected', 'Completed'))
 );
-
+GO
 
 -- Adoption Form
 CREATE TABLE shelter.AdoptionForm (
@@ -293,19 +309,20 @@ CREATE TABLE shelter.AdoptionForm (
         ON DELETE CASCADE,
     CONSTRAINT FK_AdoptionForm_Volunteer FOREIGN KEY (ProcessedByVolunteerID)
         REFERENCES people.Volunteer(VolunteerID)
-        ON DELETE SET NULL,
+        ON DELETE NO ACTION, -- Changed from SET NULL to NO ACTION
     CONSTRAINT CK_AdoptionForm_Status CHECK (Status IN ('Pending', 'HomeVisitScheduled', 'Approved', 'Rejected', 'Completed'))
 );
+GO
 
 -- Create unique constraint on adopter and dog
 CREATE UNIQUE INDEX UQ_AdoptionForm_AdopterDog
     ON shelter.AdoptionForm(AdopterID, InterestedPetID)
     WHERE Status IN ('Pending', 'HomeVisitScheduled', 'Approved');
+GO
 
 -- Volunteer Form table
--- Need to clean up this table and find better names for some columns
 CREATE TABLE shelter.VolunteerForm (
-    VolunteerFormID INT IDENTITY(1,1) NOT NULL ,
+    VolunteerFormID INT IDENTITY(1,1) NOT NULL,
     ApplicantID UNIQUEIDENTIFIER NOT NULL,
     FormDate DATETIME2(0) NOT NULL DEFAULT GETDATE(),
     SterilizationAndPetEducationPromotion BIT NOT NULL, 
@@ -329,9 +346,10 @@ CREATE TABLE shelter.VolunteerForm (
         ON DELETE CASCADE,
     CONSTRAINT FK_VolunteerForm_Volunteer FOREIGN KEY (ProcessedByVolunteerID)
         REFERENCES people.Volunteer(VolunteerID)
-        ON DELETE SET NULL,
-    CONSTRAINT CK_VolunteerForm_Status CHECK (Status IN ('Pending', 'Approved', 'Rejected', 'Completed')),
-)
+        ON DELETE NO ACTION, -- Changed from SET NULL to NO ACTION
+    CONSTRAINT CK_VolunteerForm_Status CHECK (Status IN ('Pending', 'Approved', 'Rejected', 'Completed'))
+);
+GO
 
 -- Volunteer Schedule table
 CREATE TABLE people.VolunteerSchedule (
@@ -349,6 +367,7 @@ CREATE TABLE people.VolunteerSchedule (
     CONSTRAINT CK_VolunteerSchedule_Status CHECK (Status IN ('Scheduled', 'Completed', 'Cancelled', 'NoShow')),
     CONSTRAINT CK_VolunteerSchedule_Times CHECK (EndTime > StartTime)
 );
+GO
 
 -- Create a view for available dogs
 CREATE VIEW shelter.AvailableDogs AS
