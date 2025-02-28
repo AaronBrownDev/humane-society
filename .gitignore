@@ -1,0 +1,9 @@
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Go specific
+go.sum
+/vendor/
