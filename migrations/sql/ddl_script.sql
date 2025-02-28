@@ -308,11 +308,11 @@ CREATE TABLE shelter.VolunteerForm (
     VolunteerFormID INT IDENTITY(1,1) NOT NULL ,
     ApplicantID UNIQUEIDENTIFIER NOT NULL,
     FormDate DATETIME2(0) NOT NULL DEFAULT GETDATE(),
-    WillingToPromoteSterilizationAndPetEducation BIT NOT NULL, -- Need to find better name
+    SterilizationAndPetEducationPromotion BIT NOT NULL, 
     ShiftAvailable NVARCHAR(500),
-    BelieveInBreeding BIT NOT NULL, -- Need to find better name
-    WillingToCleanKennelsAndYard BIT NOT NULL, -- Need to find better name
-    WillingToBrush BIT NOT NULL, -- Need to find better name
+    BreedingBelief BIT NOT NULL,  
+    CleaningDutiesAgreement BIT NOT NULL, 
+    DogCareAgreement BIT NOT NULL, 
     DogAllergies BIT NOT NULL,
     AnyLimitations BIT NOT NULL, -- like disabilities
     ForCommunityServiceHours BIT NOT NULL,
