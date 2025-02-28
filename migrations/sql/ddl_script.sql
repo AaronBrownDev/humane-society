@@ -4,14 +4,36 @@ GO
 USE HumaneSociety;
 GO
 
--- Schemas
+-- SCHEMAS
 CREATE SCHEMA shelter;
+GO
 
 CREATE SCHEMA medical;
+GO
 
 CREATE SCHEMA people;
+GO
 
--- Base Tables
+CREATE SCHEMA audit;
+GO
+
+-- AUDIT SYSTEM
+CREATE TABLE audit.ChangeLog (
+    LogID INT IDENTITY(1,1) NOT NULL,
+    TableName NVARCHAR(128) NOT NULL,
+    PrimaryKeyColumn NVARCHAR(128) NOT NULL,
+    PrimaryKeyValue NVARCHAR(36) NOT NULL,
+    ColumnName NVARCHAR(128) NOT NULL,
+    OldValue NVARCHAR(MAX) NULL,
+    NewValue NVARCHAR(MAX) NULL,
+    ChangeDate DATETIME2(0) NOT NULL DEFAULT GETDATE(),
+    ChangedBy NVARCHAR(128) NOT NULL DEFAULT SYSTEM_USER,
+    Operation CHAR(1) NOT NULL, -- I = Insert, U = Update, D = Delete
+    CONSTRAINT PK_ChangeLog PRIMARY KEY (LogID),
+    CONSTRAINT CK_ChangeLog_Operation CHECK (Operation IN ('I', 'U', 'D'))
+);
+
+-- BASE TABLES
 
 -- Person Table
 CREATE TABLE people.Person (
@@ -43,6 +65,7 @@ CREATE TABLE shelter.Dog (
     CONSTRAINT PK_Dog PRIMARY KEY (DogID),
     CONSTRAINT CK_Dog_Sex CHECK (Sex IN ('Male', 'Female', 'Intersex')),
 );
+
 -- Index for looking up available dogs
 CREATE INDEX IX_Dog_Adoption ON shelter.Dog(IsAdopted);
 
@@ -56,27 +79,50 @@ CREATE TABLE medical.Medicine (
     CONSTRAINT PK_Medicine PRIMARY KEY (MedicineID),
 );
 
--- Supply inventory
--- COME BACK TO THIS. Want to use supply as a quantity thing and item name, desc, and category in another table solely meant for being used as a foreign key
-CREATE TABLE shelter.Supply (
+-- Item Catalog
+CREATE TABLE shelter.ItemCatalog (
     ItemID UNIQUEIDENTIFIER NOT NULL,
-    Quantity INT NOT NULL,
-    ExpirationDate DATE DEFAULT NULL,
-    CONSTRAINT PK_Supply PRIMARY KEY (ItemID),
+    ItemName NVARCHAR(50) NOT NULL,
+    Category NVARCHAR(30) NOT NULL,
+    Description NVARCHAR(200) NULL,
+    MinimumQuantity INT NOT NULL DEFAULT 0, -- Could create a trigger that activates when supply gets below this
+    IsActive BIT NOT NULL DEFAULT 1, -- Check if active before triggering anything with it
+    CONSTRAINT PK_ItemCatalog PRIMARY KEY (ItemID),
+    CONSTRAINT UK_ItemCatalog_Name UNIQUE (ItemName)
 );
 
--- Person subtypes
+-- Supply inventory
+CREATE TABLE shelter.Supply (
+    SupplyID INT IDENTITY(1,1) NOT NULL,
+    ItemID UNIQUEIDENTIFIER NOT NULL,
+    Quantity INT NOT NULL,
+    Location NVARCHAR(50) NULL, -- If everything is stored in one place might not need
+    ExpirationDate DATE NULL,
+    BatchNumber NVARCHAR(50) NULL, -- Not sure if needed
+    AcquisitionDate DATE NULL DEFAULT GETDATE(),
+    CONSTRAINT PK_Supply PRIMARY KEY (SupplyID),
+    CONSTRAINT FK_Supply_ItemCatalog FOREIGN KEY (ItemID)
+        REFERENCES shelter.ItemCatalog(ItemID)
+        ON DELETE CASCADE,
+    CONSTRAINT CK_Supply_Quantity CHECK (Quantity >= 0)
+);
+
+-- Index for finding items by catalog ID
+CREATE INDEX IX_Supply_ItemID ON shelter.Supply(ItemID);
+
+-- PERSON SUBTYPES
 
 -- Adopter table
 CREATE TABLE people.Adopter (
     AdopterID UNIQUEIDENTIFIER NOT NULL,
     PetAllergies BIT NOT NULL DEFAULT 0,
     HaveSurrendered BIT NOT NULL DEFAULT 0,
-    -- If home visits are done this can be added
+    HomeStatus VARCHAR(20) NOT NULL DEFAULT 'Pending',
     CONSTRAINT PK_Adopter PRIMARY KEY (AdopterID),
     CONSTRAINT FK_Adopter_Person FOREIGN KEY (AdopterID)
         REFERENCES people.Person(PersonID)
         ON DELETE CASCADE,
+    CONSTRAINT CK_Adopter_HomeStatus CHECK (HomeStatus IN ('Pending', 'Approved', 'Rejected'))
 );
 
 -- Veterinarian table
@@ -125,7 +171,10 @@ CREATE TABLE people.Volunteer (
     CONSTRAINT PK_Volunteer PRIMARY KEY (VolunteerID),
     CONSTRAINT FK_Volunteer_Person FOREIGN KEY (VolunteerID)
         REFERENCES people.Person(PersonID)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+    CONSTRAINT CK_Volunteer_EmergencyContact CHECK
+    ((EmergencyContactName IS NULL AND EmergencyContactPhone IS NULL) OR
+    (EmergencyContactName IS NOT NULL AND EmergencyContactPhone IS NOT NULL)), -- If emergency contact exists, phone # is required
 )
 
 -- Relationship tables
@@ -166,7 +215,7 @@ CREATE TABLE people.PetOwnerPets (
     PetName NVARCHAR(50) NOT NULL,
     PetType NVARCHAR(20) DEFAULT 'Dog', -- Specie
     PetBreed NVARCHAR(50) NOT NULL, -- Might only apply when the pet is dog so still a WIP
-    Sex VARCHAR(8) NULL,
+    Sex VARCHAR(8) NOT NULL,
     OwnershipDate DATE NOT NULL,
     LivingSpace VARCHAR(7) NOT NULL,
     CONSTRAINT PK_PetOwnerPets PRIMARY KEY (PetID),
@@ -231,7 +280,6 @@ CREATE TABLE shelter.AdoptionForm (
     AdopterID UNIQUEIDENTIFIER NOT NULL,
     InterestedPetID UNIQUEIDENTIFIER NOT NULL,
     FormDate DATETIME2(0) NOT NULL DEFAULT GETDATE(),
-    HomeVisitDate DATE NULL, -- If humane society checks the home first then this stays but for now I haven't looked into if they do that
     ProcessedByVolunteerID UNIQUEIDENTIFIER NULL, -- Logs who finalizes form
     ProcessingDate DATETIME2(0) NULL,
     Status VARCHAR(20) NOT NULL DEFAULT 'Pending',
@@ -268,7 +316,7 @@ CREATE TABLE shelter.VolunteerForm (
     DogAllergies BIT NOT NULL,
     AnyLimitations BIT NOT NULL, -- like disabilities
     ForCommunityServiceHours BIT NOT NULL,
-    NeededCommunityServiceHours BIT NULL,
+    NeededCommunityServiceHours INT NULL,
     HowDidYouHearAboutUs NVARCHAR(500) NOT NULL,
     QuestionsAndComments NVARCHAR(500) NULL,
     ProcessedByVolunteerID UNIQUEIDENTIFIER NULL, -- Logs who finalizes form
