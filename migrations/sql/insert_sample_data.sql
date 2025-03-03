@@ -30,7 +30,7 @@ DELETE FROM people.Person;
 ------------------------------------------
 
 -- Insert Person records
-INSERT INTO people.Person (PersonID, FirstName, LastName, BirthDate, PhysicalAddress, MailingAddress, Email, Phone)
+INSERT INTO people.Person (PersonID, FirstName, LastName, BirthDate, PhysicalAddress, MailingAddress, EmailAddress, PhoneNumber)
 VALUES
     (NEWID(), 'John', 'Smith', '1985-04-12', '123 Main St, Springfield, IL 62701', '123 Main St, Springfield, IL 62701', 'john.smith@email.com', '217-555-1234'),
     (NEWID(), 'Jane', 'Doe', '1990-08-24', '456 Oak Ave, Springfield, IL 62702', '456 Oak Ave, Springfield, IL 62702', 'jane.doe@email.com', '217-555-5678'),
@@ -71,7 +71,7 @@ SELECT TOP 1 @PersonID15 = PersonID FROM people.Person WHERE FirstName = 'Daniel
 
 -- Assign roles to people
 -- Adopters
-INSERT INTO people.Adopter (AdopterID, PetAllergies, HaveSurrendered, HomeStatus)
+INSERT INTO people.Adopter (AdopterID, HasPetAllergies, HasSurrenderedPets, HomeStatus)
 VALUES
     (@PersonID1, 0, 0, 'Approved'),
     (@PersonID4, 1, 0, 'Approved'),
@@ -93,14 +93,14 @@ VALUES
     (@PersonID10); -- Jessica is both a surrenderer and adopter
 
 -- Pet Owners
-INSERT INTO people.PetOwner (PetOwnerID, VetID, PetsSterilized, PetsVaccinated, HeartWormPreventionFromVet)
+INSERT INTO people.PetOwner (PetOwnerID, VeterinarianID, HasSterilizedPets, HasVaccinatedPets, UsesVetHeartWormPrevention)
 VALUES
     (@PersonID1, @PersonID3, 1, 1, 1), -- John is both an adopter and pet owner
     (@PersonID6, @PersonID11, 1, 1, 0),
     (@PersonID12, @PersonID3, 0, 1, 0); -- Amanda is both an adopter and pet owner
 
 -- Volunteers
-INSERT INTO people.Volunteer (VolunteerID, VolunteerRole, StartDate, EndDate, EmergencyContactName, EmergencyContactPhone, IsActive)
+INSERT INTO people.Volunteer (VolunteerID, VolunteerPosition, StartDate, EndDate, EmergencyContactName, EmergencyContactPhone, IsActive)
 VALUES
     (@PersonID2, 'Dog Walker', '2023-01-15', NULL, 'Robert Johnson', '217-555-9012', 1),
     (@PersonID7, 'Cleaner', '2023-03-10', NULL, 'Mary Miller', '217-555-1234', 1),
@@ -109,7 +109,7 @@ VALUES
     (@PersonID15, 'Dog Walker', '2022-08-18', '2023-06-30', 'Karen Thompson', '217-555-4321', 0);
 
 -- Pet Owner Pets
-INSERT INTO people.PetOwnerPets (PetOwnerID, PetName, PetType, PetBreed, Sex, OwnershipDate, LivingSpace)
+INSERT INTO people.PetOwnerPets (PetOwnerID, Name, Type, Breed, Sex, OwnershipDate, LivingEnvironment)
 VALUES
     (@PersonID1, 'Max', 'Dog', 'Labrador Retriever', 'Male', '2020-05-10', 'Indoor'),
     (@PersonID1, 'Bella', 'Dog', 'Beagle', 'Female', '2021-03-15', 'Both'),
@@ -131,7 +131,7 @@ DECLARE @Dog6 UNIQUEIDENTIFIER = NEWID();
 DECLARE @Dog7 UNIQUEIDENTIFIER = NEWID();
 DECLARE @Dog8 UNIQUEIDENTIFIER = NEWID();
 
-INSERT INTO shelter.Dog (DogID, DogName, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber, IsAdopted)
+INSERT INTO shelter.Dog (DogID, Name, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber, IsAdopted)
 VALUES
     (@Dog1, 'Rocky', '2023-02-15', '2021-06-10', 'Pit Bull Mix', 'Male', 'Brown', 1, 0),
     (@Dog2, 'Luna', '2023-03-22', '2022-01-05', 'Labrador Retriever', 'Female', 'Black', 2, 0),
@@ -147,7 +147,7 @@ VALUES
 ------------------------------------------
 
 -- Medicine
-INSERT INTO medical.Medicine (MedicationName, Manufacturer, Description, DosageUnit)
+INSERT INTO medical.Medicine (Name, Manufacturer, Description, DosageUnit)
 VALUES
     ('Heartgard Plus', 'Boehringer Ingelheim', 'Heartworm prevention', 'Tablet'),
     ('Frontline Plus', 'Merial', 'Flea and tick prevention', 'ml'),
@@ -158,14 +158,14 @@ VALUES
 -- Store medicine IDs in variables
 DECLARE @MedicineID1 INT, @MedicineID2 INT, @MedicineID3 INT, @MedicineID4 INT, @MedicineID5 INT;
 
-SELECT @MedicineID1 = MedicineID FROM medical.Medicine WHERE MedicationName = 'Heartgard Plus';
-SELECT @MedicineID2 = MedicineID FROM medical.Medicine WHERE MedicationName = 'Frontline Plus';
-SELECT @MedicineID3 = MedicineID FROM medical.Medicine WHERE MedicationName = 'Rimadyl';
-SELECT @MedicineID4 = MedicineID FROM medical.Medicine WHERE MedicationName = 'Clavamox';
-SELECT @MedicineID5 = MedicineID FROM medical.Medicine WHERE MedicationName = 'Cerenia';
+SELECT @MedicineID1 = MedicineID FROM medical.Medicine WHERE Name = 'Heartgard Plus';
+SELECT @MedicineID2 = MedicineID FROM medical.Medicine WHERE Name = 'Frontline Plus';
+SELECT @MedicineID3 = MedicineID FROM medical.Medicine WHERE Name = 'Rimadyl';
+SELECT @MedicineID4 = MedicineID FROM medical.Medicine WHERE Name = 'Clavamox';
+SELECT @MedicineID5 = MedicineID FROM medical.Medicine WHERE Name = 'Cerenia';
 
 -- Dog Prescriptions
-INSERT INTO medical.DogPrescription (DogID, MedicineID, Dosage, Frequency, StartDate, EndDate, Notes, PrescribedBy)
+INSERT INTO medical.DogPrescription (DogID, MedicineID, Dosage, Frequency, StartDate, EndDate, Notes, VetPrescriberID)
 VALUES
     (@Dog1, @MedicineID1, 1, 'Once monthly', '2023-02-20', NULL, 'Monthly heartworm prevention', @PersonID3),
     (@Dog1, @MedicineID2, 0.5, 'Once monthly', '2023-02-20', NULL, 'Monthly flea and tick prevention', @PersonID3),
@@ -178,7 +178,7 @@ VALUES
 ------------------------------------------
 
 -- Item Catalog
-INSERT INTO shelter.ItemCatalog (ItemID, ItemName, Category, Description, MinimumQuantity, IsActive)
+INSERT INTO shelter.ItemCatalog (ItemID, Name, Category, Description, MinimumQuantity, IsActive)
 VALUES
     (NEWID(), 'Dog Food - Adult', 'Food', 'Premium adult dog food', 5, 1),
     (NEWID(), 'Dog Food - Puppy', 'Food', 'Premium puppy food', 3, 1),
@@ -202,19 +202,19 @@ DECLARE @ItemID4 UNIQUEIDENTIFIER, @ItemID5 UNIQUEIDENTIFIER, @ItemID6 UNIQUEIDE
 DECLARE @ItemID7 UNIQUEIDENTIFIER, @ItemID11 UNIQUEIDENTIFIER, @ItemID13 UNIQUEIDENTIFIER;
 DECLARE @ItemID14 UNIQUEIDENTIFIER;
 
-SELECT TOP 1 @ItemID1 = ItemID FROM shelter.ItemCatalog WHERE ItemName = 'Dog Food - Adult';
-SELECT TOP 1 @ItemID2 = ItemID FROM shelter.ItemCatalog WHERE ItemName = 'Dog Food - Puppy';
-SELECT TOP 1 @ItemID3 = ItemID FROM shelter.ItemCatalog WHERE ItemName = 'Dog Treats';
-SELECT TOP 1 @ItemID4 = ItemID FROM shelter.ItemCatalog WHERE ItemName = 'Leash - Standard';
-SELECT TOP 1 @ItemID5 = ItemID FROM shelter.ItemCatalog WHERE ItemName = 'Collar - Small';
-SELECT TOP 1 @ItemID6 = ItemID FROM shelter.ItemCatalog WHERE ItemName = 'Collar - Medium';
-SELECT TOP 1 @ItemID7 = ItemID FROM shelter.ItemCatalog WHERE ItemName = 'Collar - Large';
-SELECT TOP 1 @ItemID11 = ItemID FROM shelter.ItemCatalog WHERE ItemName = 'Cleaning Solution';
-SELECT TOP 1 @ItemID13 = ItemID FROM shelter.ItemCatalog WHERE ItemName = 'Paper Towels';
-SELECT TOP 1 @ItemID14 = ItemID FROM shelter.ItemCatalog WHERE ItemName = 'Dog Shampoo';
+SELECT TOP 1 @ItemID1 = ItemID FROM shelter.ItemCatalog WHERE Name = 'Dog Food - Adult';
+SELECT TOP 1 @ItemID2 = ItemID FROM shelter.ItemCatalog WHERE Name = 'Dog Food - Puppy';
+SELECT TOP 1 @ItemID3 = ItemID FROM shelter.ItemCatalog WHERE Name = 'Dog Treats';
+SELECT TOP 1 @ItemID4 = ItemID FROM shelter.ItemCatalog WHERE Name = 'Leash - Standard';
+SELECT TOP 1 @ItemID5 = ItemID FROM shelter.ItemCatalog WHERE Name = 'Collar - Small';
+SELECT TOP 1 @ItemID6 = ItemID FROM shelter.ItemCatalog WHERE Name = 'Collar - Medium';
+SELECT TOP 1 @ItemID7 = ItemID FROM shelter.ItemCatalog WHERE Name = 'Collar - Large';
+SELECT TOP 1 @ItemID11 = ItemID FROM shelter.ItemCatalog WHERE Name = 'Cleaning Solution';
+SELECT TOP 1 @ItemID13 = ItemID FROM shelter.ItemCatalog WHERE Name = 'Paper Towels';
+SELECT TOP 1 @ItemID14 = ItemID FROM shelter.ItemCatalog WHERE Name = 'Dog Shampoo';
 
 -- Supplies
-INSERT INTO shelter.Supply (ItemID, Quantity, Location, ExpirationDate, BatchNumber, AcquisitionDate)
+INSERT INTO shelter.Supply (ItemID, Quantity, StorageLocation, ExpirationDate, BatchNumber, AcquisitionDate)
 VALUES
     (@ItemID1, 15, 'Main Storage', '2024-05-20', 'BT12345', '2023-05-15'),
     (@ItemID1, 10, 'Main Storage', '2024-08-10', 'BT12346', '2023-08-05'),
@@ -234,10 +234,10 @@ VALUES
 
 -- Surrender Form
 INSERT INTO shelter.SurrenderForm (
-    SurrendererID, FormDate, DogName, DogAge, WeightInPounds, Sex, Breed, Color,
-    LivingSpace, OwnershipDate, VetID, LastVetVisit, GoodWithChildren, GoodWithDogs,
-    GoodWithCats, GoodWithStrangers, HouseTrained, Sterilized, MicroChipNumber,
-    MedicalProblems, BiteHistory, Reason, ProcessedByVolunteerID, ProcessingDate,
+    SurrendererID, SubmissionDate, DogName, DogAge, WeightInPounds, Sex, Breed, Color,
+    LivingEnvironment, OwnershipDate, VeterinarianID, LastVetVisitDate, IsGoodWithChildren, IsGoodWithDogs,
+    IsGoodWithCats, IsGoodWithStrangers, IsHouseTrained, IsSterilized, MicroChipNumber,
+    MedicalProblems, BiteHistory, SurrenderReason, ProcessedByVolunteerID, ProcessingDate,
     ResultingDogID, Status
 )
 VALUES
@@ -263,7 +263,7 @@ VALUES
 
 -- Adoption Form
 INSERT INTO shelter.AdoptionForm (
-    AdopterID, InterestedPetID, FormDate, ProcessedByVolunteerID, ProcessingDate, Status, RejectionReason
+    AdopterID, DogID, SubmissionDate, ProcessedByVolunteerID, ProcessingDate, Status, RejectionReason
 )
 VALUES
     (@PersonID1, @Dog5, '2023-05-20', @PersonID13, '2023-05-25', 'Approved', NULL),
@@ -274,9 +274,9 @@ VALUES
 
 -- Volunteer Form
 INSERT INTO shelter.VolunteerForm (
-    ApplicantID, FormDate, SterilizationAndPetEducationPromotion, ShiftAvailable,
-    BreedingBelief, CleaningDutiesAgreement, DogCareAgreement, DogAllergies, AnyLimitations,
-    ForCommunityServiceHours, NeededCommunityServiceHours, HowDidYouHearAboutUs, QuestionsAndComments,
+    ApplicantID, SubmissionDate, SupportsAnimalWelfareEducation, AvailableShifts,
+    SupportsResponsibleBreeding, AcceptsCleaningDuties, AcceptsDogCare, HasDogAllergies, HasPhysicalLimitations,
+    IsForCommunityService, RequiredServiceHours, ReferralSource, CommentsAndQuestions,
     ProcessedByVolunteerID, ProcessingDate, Status, RejectionReason
 )
 VALUES
@@ -325,7 +325,7 @@ VALUES
 
 -- Sample audit log entries
 INSERT INTO audit.ChangeLog (
-    TableName, PrimaryKeyColumn, PrimaryKeyValue, ColumnName, OldValue, NewValue, ChangeDate, ChangedBy, Operation
+    TableName, PrimaryKeyColumn, PrimaryKeyValue, ColumnName, OldValue, NewValue, ChangeDate, ChangedBy, AuditActionType
 )
 VALUES
     ('shelter.Dog', 'DogID', CONVERT(NVARCHAR(36), @Dog6), 'IsAdopted', '0', '1', '2023-06-01 10:15:23', 'system', 'U'),
@@ -336,4 +336,4 @@ VALUES
 
 -- Mark one of the adoption forms as complete and the dog as adopted
 UPDATE shelter.Dog SET IsAdopted = 1 WHERE DogID = @Dog6;
-UPDATE shelter.AdoptionForm SET Status = 'Completed' WHERE AdopterID = @PersonID1 AND InterestedPetID = @Dog5;
+UPDATE shelter.AdoptionForm SET Status = 'Completed' WHERE AdopterID = @PersonID1 AND DogID = @Dog5;
