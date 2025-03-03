@@ -28,9 +28,9 @@ CREATE TABLE audit.ChangeLog (
     NewValue NVARCHAR(MAX) NULL,
     ChangeDate DATETIME2(0) NOT NULL DEFAULT GETDATE(),
     ChangedBy NVARCHAR(128) NOT NULL DEFAULT SYSTEM_USER,
-    Operation CHAR(1) NOT NULL, -- I = Insert, U = Update, D = Delete
+    AuditActionType CHAR(1) NOT NULL, -- I = Insert, U = Update, D = Delete
     CONSTRAINT PK_ChangeLog PRIMARY KEY (LogID),
-    CONSTRAINT CK_ChangeLog_Operation CHECK (Operation IN ('I', 'U', 'D'))
+    CONSTRAINT CK_ChangeLog_AuditActionType CHECK (AuditActionType IN ('I', 'U', 'D'))
 );
 GO
 
@@ -44,8 +44,8 @@ CREATE TABLE people.Person (
     BirthDate DATE NOT NULL,
     PhysicalAddress NVARCHAR(150) NOT NULL,
     MailingAddress NVARCHAR(150) NOT NULL,
-    Email VARCHAR(100) NULL,
-    Phone VARCHAR(20) NULL,
+    EmailAddress VARCHAR(100) NULL,
+    PhoneNumber VARCHAR(20) NULL,
     CONSTRAINT PK_Person PRIMARY KEY (PersonID)
 );
 GO
@@ -57,7 +57,7 @@ GO
 -- Dog Table
 CREATE TABLE shelter.Dog (
     DogID UNIQUEIDENTIFIER NOT NULL,
-    DogName NVARCHAR(50) NOT NULL,
+    Name NVARCHAR(50) NOT NULL,
     IntakeDate DATE NOT NULL,
     EstimatedBirthDate DATE NOT NULL,
     Breed NVARCHAR(50) NOT NULL,
@@ -77,10 +77,10 @@ GO
 -- Medicine table
 CREATE TABLE medical.Medicine (
     MedicineID INT IDENTITY(1,1) NOT NULL,
-    MedicationName NVARCHAR(50) NOT NULL,
+    Name NVARCHAR(50) NOT NULL,
     Manufacturer NVARCHAR(50) NOT NULL,
     Description NVARCHAR(200) NULL,
-    DosageUnit NVARCHAR(20) NULL, -- not sure if I need
+    DosageUnit NVARCHAR(20) NULL,
     CONSTRAINT PK_Medicine PRIMARY KEY (MedicineID)
 );
 GO
@@ -88,13 +88,13 @@ GO
 -- Item Catalog
 CREATE TABLE shelter.ItemCatalog (
     ItemID UNIQUEIDENTIFIER NOT NULL,
-    ItemName NVARCHAR(50) NOT NULL,
+    Name NVARCHAR(50) NOT NULL,
     Category NVARCHAR(30) NOT NULL,
     Description NVARCHAR(200) NULL,
-    MinimumQuantity INT NOT NULL DEFAULT 0, -- Could create a trigger that activates when supply gets below this
-    IsActive BIT NOT NULL DEFAULT 1, -- Check if active before triggering anything with it
+    MinimumQuantity INT NOT NULL DEFAULT 0,
+    IsActive BIT NOT NULL DEFAULT 1,
     CONSTRAINT PK_ItemCatalog PRIMARY KEY (ItemID),
-    CONSTRAINT UK_ItemCatalog_Name UNIQUE (ItemName)
+    CONSTRAINT UK_ItemCatalog_Name UNIQUE (Name)
 );
 GO
 
@@ -103,9 +103,9 @@ CREATE TABLE shelter.Supply (
     SupplyID INT IDENTITY(1,1) NOT NULL,
     ItemID UNIQUEIDENTIFIER NOT NULL,
     Quantity INT NOT NULL,
-    Location NVARCHAR(50) NULL, -- If everything is stored in one place might not need
+    StorageLocation NVARCHAR(50) NULL,
     ExpirationDate DATE NULL,
-    BatchNumber NVARCHAR(50) NULL, -- Not sure if needed
+    BatchNumber NVARCHAR(50) NULL,
     AcquisitionDate DATE NULL DEFAULT GETDATE(),
     CONSTRAINT PK_Supply PRIMARY KEY (SupplyID),
     CONSTRAINT FK_Supply_ItemCatalog FOREIGN KEY (ItemID)
@@ -134,8 +134,8 @@ GO
 -- Adopter table
 CREATE TABLE people.Adopter (
     AdopterID UNIQUEIDENTIFIER NOT NULL,
-    PetAllergies BIT NOT NULL DEFAULT 0,
-    HaveSurrendered BIT NOT NULL DEFAULT 0,
+    HasPetAllergies BIT NOT NULL DEFAULT 0,
+    HasSurrenderedPets BIT NOT NULL DEFAULT 0,
     HomeStatus VARCHAR(20) NOT NULL DEFAULT 'Pending',
     CONSTRAINT PK_Adopter PRIMARY KEY (AdopterID),
     CONSTRAINT FK_Adopter_Person FOREIGN KEY (AdopterID)
@@ -158,27 +158,27 @@ GO
 -- Pet Owner table
 CREATE TABLE people.PetOwner (
     PetOwnerID UNIQUEIDENTIFIER NOT NULL,
-    VetID UNIQUEIDENTIFIER NULL,
-    PetsSterilized BIT NOT NULL DEFAULT 0,
-    PetsVaccinated BIT NOT NULL DEFAULT 0,
-    HeartWormPreventionFromVet BIT NOT NULL DEFAULT 0,
+    VeterinarianID UNIQUEIDENTIFIER NULL,
+    HasSterilizedPets BIT NOT NULL DEFAULT 0,
+    HasVaccinatedPets BIT NOT NULL DEFAULT 0,
+    UsesVetHeartWormPrevention BIT NOT NULL DEFAULT 0,
     CONSTRAINT PK_PetOwner PRIMARY KEY (PetOwnerID),
     CONSTRAINT FK_PetOwner_Person FOREIGN KEY (PetOwnerID)
         REFERENCES people.Person(PersonID)
         ON DELETE CASCADE,
-    CONSTRAINT FK_PetOwner_Veterinarian FOREIGN KEY (VetID)
+    CONSTRAINT FK_PetOwner_Veterinarian FOREIGN KEY (VeterinarianID)
         REFERENCES people.Veterinarian(VeterinarianID)
-        ON DELETE NO ACTION -- Changed from CASCADE to NO ACTION to prevent multiple cascade paths
+        ON DELETE NO ACTION
 );
 GO
 
 -- Volunteer table
 CREATE TABLE people.Volunteer (
     VolunteerID UNIQUEIDENTIFIER NOT NULL,
-    VolunteerRole NVARCHAR(50) NOT NULL,
+    VolunteerPosition NVARCHAR(50) NOT NULL,
     StartDate DATE NOT NULL DEFAULT GETDATE(),
     EndDate DATE NULL,
-    EmergencyContactName NVARCHAR(100) NULL, -- In case of emergency
+    EmergencyContactName NVARCHAR(100) NULL,
     EmergencyContactPhone VARCHAR(20) NULL,
     IsActive BIT NOT NULL DEFAULT 1,
     CONSTRAINT PK_Volunteer PRIMARY KEY (VolunteerID),
@@ -186,8 +186,8 @@ CREATE TABLE people.Volunteer (
         REFERENCES people.Person(PersonID)
         ON DELETE CASCADE,
     CONSTRAINT CK_Volunteer_EmergencyContact CHECK
-    ((EmergencyContactName IS NULL AND EmergencyContactPhone IS NULL) OR
-    (EmergencyContactName IS NOT NULL AND EmergencyContactPhone IS NOT NULL)) -- If emergency contact exists, phone # is required
+        ((EmergencyContactName IS NULL AND EmergencyContactPhone IS NULL) OR
+         (EmergencyContactName IS NOT NULL AND EmergencyContactPhone IS NOT NULL))
 );
 GO
 
@@ -199,12 +199,11 @@ CREATE TABLE medical.DogPrescription (
     DogID UNIQUEIDENTIFIER NOT NULL,
     MedicineID INT NOT NULL,
     Dosage DECIMAL(5,2) NOT NULL,
-    -- Dosage unit might be pulled from medicine table or vise versa
-    Frequency NVARCHAR(50) NULL, -- might default to once a day, not sure yet
+    Frequency NVARCHAR(50) NULL,
     StartDate DATE NOT NULL DEFAULT GETDATE(),
     EndDate DATE NULL,
     Notes NVARCHAR(200) NULL,
-    PrescribedBy UNIQUEIDENTIFIER NULL, -- References to vet, made explicitly NULL
+    VetPrescriberID UNIQUEIDENTIFIER NULL,
     CONSTRAINT PK_DogPrescription PRIMARY KEY (PrescriptionID),
     CONSTRAINT FK_DogPrescription_Dog FOREIGN KEY (DogID)
         REFERENCES shelter.Dog(DogID)
@@ -212,9 +211,9 @@ CREATE TABLE medical.DogPrescription (
     CONSTRAINT FK_DogPrescription_Medicine FOREIGN KEY (MedicineID)
         REFERENCES medical.Medicine(MedicineID)
         ON DELETE CASCADE,
-    CONSTRAINT FK_DogPrescription_Veterinarian FOREIGN KEY (PrescribedBy)
+    CONSTRAINT FK_DogPrescription_Veterinarian FOREIGN KEY (VetPrescriberID)
         REFERENCES people.Veterinarian(VeterinarianID)
-        ON DELETE NO ACTION -- Changed from SET NULL to NO ACTION
+        ON DELETE NO ACTION
 );
 GO
 
@@ -227,17 +226,17 @@ GO
 CREATE TABLE people.PetOwnerPets (
     PetID INT IDENTITY(1,1) NOT NULL,
     PetOwnerID UNIQUEIDENTIFIER NOT NULL,
-    PetName NVARCHAR(50) NOT NULL,
-    PetType NVARCHAR(20) DEFAULT 'Dog', -- Specie
-    PetBreed NVARCHAR(50) NOT NULL, -- Might only apply when the pet is dog so still a WIP
+    Name NVARCHAR(50) NOT NULL,
+    Type NVARCHAR(20) DEFAULT 'Dog',
+    Breed NVARCHAR(50) NOT NULL,
     Sex VARCHAR(8) NOT NULL,
     OwnershipDate DATE NOT NULL,
-    LivingSpace VARCHAR(7) NOT NULL,
+    LivingEnvironment VARCHAR(7) NOT NULL,
     CONSTRAINT PK_PetOwnerPets PRIMARY KEY (PetID),
     CONSTRAINT FK_PetOwnerPets_PetOwner FOREIGN KEY (PetOwnerID)
         REFERENCES people.PetOwner(PetOwnerID)
         ON DELETE CASCADE,
-    CONSTRAINT CK_PetOwnerPets_LivingSpace CHECK (LivingSpace IN ('Indoor', 'Outdoor', 'Both')),
+    CONSTRAINT CK_PetOwnerPets_LivingEnvironment CHECK (LivingEnvironment IN ('Indoor', 'Outdoor', 'Both')),
     CONSTRAINT CK_PetOwnerPets_Sex CHECK (Sex IN ('Male', 'Female', 'Intersex'))
 );
 GO
@@ -246,46 +245,46 @@ GO
 CREATE TABLE shelter.SurrenderForm (
     SurrenderFormID INT IDENTITY(1,1) NOT NULL,
     SurrendererID UNIQUEIDENTIFIER NOT NULL,
-    FormDate DATETIME2(0) NOT NULL DEFAULT GETDATE(),
+    SubmissionDate DATETIME2(0) NOT NULL DEFAULT GETDATE(),
     DogName NVARCHAR(50) NOT NULL,
     DogAge INT NOT NULL,
     WeightInPounds DECIMAL(5,2) NOT NULL,
     Sex VARCHAR(8) NOT NULL,
     Breed NVARCHAR(50) NULL,
     Color NVARCHAR(30) NULL,
-    LivingSpace VARCHAR(7) NOT NULL,
+    LivingEnvironment VARCHAR(7) NOT NULL,
     OwnershipDate DATE NOT NULL,
-    VetID UNIQUEIDENTIFIER NULL,
-    LastVetVisit DATE NULL,
-    GoodWithChildren BIT NOT NULL DEFAULT 0,
-    GoodWithDogs BIT NOT NULL DEFAULT 0,
-    GoodWithCats BIT NOT NULL DEFAULT 0,
-    GoodWithStrangers BIT NOT NULL DEFAULT 0,
-    HouseTrained BIT NOT NULL DEFAULT 0,
-    Sterilized BIT NOT NULL DEFAULT 0,
+    VeterinarianID UNIQUEIDENTIFIER NULL,
+    LastVetVisitDate DATE NULL,
+    IsGoodWithChildren BIT NOT NULL DEFAULT 0,
+    IsGoodWithDogs BIT NOT NULL DEFAULT 0,
+    IsGoodWithCats BIT NOT NULL DEFAULT 0,
+    IsGoodWithStrangers BIT NOT NULL DEFAULT 0,
+    IsHouseTrained BIT NOT NULL DEFAULT 0,
+    IsSterilized BIT NOT NULL DEFAULT 0,
     MicroChipNumber VARCHAR(15) NULL,
     MedicalProblems NVARCHAR(500) NULL,
     BiteHistory NVARCHAR(500) NULL,
-    Reason NVARCHAR(500) NOT NULL,
-    ProcessedByVolunteerID UNIQUEIDENTIFIER NULL, -- Logs who finalizes form
+    SurrenderReason NVARCHAR(500) NOT NULL,
+    ProcessedByVolunteerID UNIQUEIDENTIFIER NULL,
     ProcessingDate DATETIME2(0) NULL,
     ResultingDogID UNIQUEIDENTIFIER NULL,
     Status VARCHAR(20) DEFAULT 'Pending',
     CONSTRAINT PK_SurrenderForm PRIMARY KEY (SurrenderFormID),
     CONSTRAINT FK_SurrenderForm_PetSurrenderer FOREIGN KEY (SurrendererID)
-       REFERENCES people.PetSurrenderer(SurrendererID)
-       ON DELETE CASCADE,
-    CONSTRAINT FK_SurrenderForm_Veterinarian FOREIGN KEY (VetID)
-       REFERENCES people.Veterinarian(VeterinarianID)
-       ON DELETE NO ACTION, -- Changed from SET NULL to NO ACTION
+        REFERENCES people.PetSurrenderer(SurrendererID)
+        ON DELETE CASCADE,
+    CONSTRAINT FK_SurrenderForm_Veterinarian FOREIGN KEY (VeterinarianID)
+        REFERENCES people.Veterinarian(VeterinarianID)
+        ON DELETE NO ACTION,
     CONSTRAINT FK_SurrenderForm_Volunteer FOREIGN KEY (ProcessedByVolunteerID)
-       REFERENCES people.Volunteer(VolunteerID)
-       ON DELETE NO ACTION, -- Changed from SET NULL to NO ACTION
+        REFERENCES people.Volunteer(VolunteerID)
+        ON DELETE NO ACTION,
     CONSTRAINT FK_SurrenderForm_Dog FOREIGN KEY (ResultingDogID)
-       REFERENCES shelter.Dog(DogID)
-       ON DELETE NO ACTION, -- Changed from SET NULL to NO ACTION
+        REFERENCES shelter.Dog(DogID)
+        ON DELETE NO ACTION,
     CONSTRAINT CK_SurrenderForm_Sex CHECK (Sex IN ('Male', 'Female', 'Intersex')),
-    CONSTRAINT CK_SurrenderForm_LivingSpace CHECK (LivingSpace IN ('Indoor', 'Outdoor', 'Both')),
+    CONSTRAINT CK_SurrenderForm_LivingEnvironment CHECK (LivingEnvironment IN ('Indoor', 'Outdoor', 'Both')),
     CONSTRAINT CK_SurrenderForm_Status CHECK (Status IN ('Pending', 'Approved', 'Rejected', 'Completed'))
 );
 GO
@@ -294,9 +293,9 @@ GO
 CREATE TABLE shelter.AdoptionForm (
     AdoptionFormID INT IDENTITY(1,1) NOT NULL,
     AdopterID UNIQUEIDENTIFIER NOT NULL,
-    InterestedPetID UNIQUEIDENTIFIER NOT NULL,
-    FormDate DATETIME2(0) NOT NULL DEFAULT GETDATE(),
-    ProcessedByVolunteerID UNIQUEIDENTIFIER NULL, -- Logs who finalizes form
+    DogID UNIQUEIDENTIFIER NOT NULL,
+    SubmissionDate DATETIME2(0) NOT NULL DEFAULT GETDATE(),
+    ProcessedByVolunteerID UNIQUEIDENTIFIER NULL,
     ProcessingDate DATETIME2(0) NULL,
     Status VARCHAR(20) NOT NULL DEFAULT 'Pending',
     RejectionReason NVARCHAR(200) NULL,
@@ -304,19 +303,19 @@ CREATE TABLE shelter.AdoptionForm (
     CONSTRAINT FK_AdoptionForm_Adopter FOREIGN KEY (AdopterID)
         REFERENCES people.Adopter(AdopterID)
         ON DELETE CASCADE,
-    CONSTRAINT FK_AdoptionForm_Dog FOREIGN KEY (InterestedPetID)
+    CONSTRAINT FK_AdoptionForm_Dog FOREIGN KEY (DogID)
         REFERENCES shelter.Dog(DogID)
         ON DELETE CASCADE,
     CONSTRAINT FK_AdoptionForm_Volunteer FOREIGN KEY (ProcessedByVolunteerID)
         REFERENCES people.Volunteer(VolunteerID)
-        ON DELETE NO ACTION, -- Changed from SET NULL to NO ACTION
+        ON DELETE NO ACTION,
     CONSTRAINT CK_AdoptionForm_Status CHECK (Status IN ('Pending', 'HomeVisitScheduled', 'Approved', 'Rejected', 'Completed'))
 );
 GO
 
 -- Create unique constraint on adopter and dog
 CREATE UNIQUE INDEX UQ_AdoptionForm_AdopterDog
-    ON shelter.AdoptionForm(AdopterID, InterestedPetID)
+    ON shelter.AdoptionForm(AdopterID, DogID)
     WHERE Status IN ('Pending', 'HomeVisitScheduled', 'Approved');
 GO
 
@@ -324,19 +323,19 @@ GO
 CREATE TABLE shelter.VolunteerForm (
     VolunteerFormID INT IDENTITY(1,1) NOT NULL,
     ApplicantID UNIQUEIDENTIFIER NOT NULL,
-    FormDate DATETIME2(0) NOT NULL DEFAULT GETDATE(),
-    SterilizationAndPetEducationPromotion BIT NOT NULL, 
-    ShiftAvailable NVARCHAR(500),
-    BreedingBelief BIT NOT NULL,  
-    CleaningDutiesAgreement BIT NOT NULL, 
-    DogCareAgreement BIT NOT NULL, 
-    DogAllergies BIT NOT NULL,
-    AnyLimitations BIT NOT NULL, -- like disabilities
-    ForCommunityServiceHours BIT NOT NULL,
-    NeededCommunityServiceHours INT NULL,
-    HowDidYouHearAboutUs NVARCHAR(500) NOT NULL,
-    QuestionsAndComments NVARCHAR(500) NULL,
-    ProcessedByVolunteerID UNIQUEIDENTIFIER NULL, -- Logs who finalizes form
+    SubmissionDate DATETIME2(0) NOT NULL DEFAULT GETDATE(),
+    SupportsAnimalWelfareEducation BIT NOT NULL,
+    AvailableShifts NVARCHAR(500),
+    SupportsResponsibleBreeding BIT NOT NULL,
+    AcceptsCleaningDuties BIT NOT NULL,
+    AcceptsDogCare BIT NOT NULL,
+    HasDogAllergies BIT NOT NULL,
+    HasPhysicalLimitations BIT NOT NULL,
+    IsForCommunityService BIT NOT NULL,
+    RequiredServiceHours INT NULL,
+    ReferralSource NVARCHAR(500) NOT NULL,
+    CommentsAndQuestions NVARCHAR(500) NULL,
+    ProcessedByVolunteerID UNIQUEIDENTIFIER NULL,
     ProcessingDate DATETIME2(0) NULL,
     Status VARCHAR(20) NOT NULL DEFAULT 'Pending',
     RejectionReason NVARCHAR(200) NULL,
@@ -346,7 +345,7 @@ CREATE TABLE shelter.VolunteerForm (
         ON DELETE CASCADE,
     CONSTRAINT FK_VolunteerForm_Volunteer FOREIGN KEY (ProcessedByVolunteerID)
         REFERENCES people.Volunteer(VolunteerID)
-        ON DELETE NO ACTION, -- Changed from SET NULL to NO ACTION
+        ON DELETE NO ACTION,
     CONSTRAINT CK_VolunteerForm_Status CHECK (Status IN ('Pending', 'Approved', 'Rejected', 'Completed'))
 );
 GO
@@ -373,7 +372,7 @@ GO
 CREATE VIEW shelter.AvailableDogs AS
 SELECT
     d.DogID,
-    d.DogName,
+    d.Name, 
     d.IntakeDate,
     d.EstimatedBirthDate,
     DATEDIFF(YEAR, d.EstimatedBirthDate, GETDATE()) AS AgeInYears,
