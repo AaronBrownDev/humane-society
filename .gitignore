@@ -7,3 +7,6 @@
 # Go specific
 go.sum
 /vendor/
+
+# Environment variables
+.env
