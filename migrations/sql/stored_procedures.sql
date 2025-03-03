@@ -17,6 +17,53 @@ BEGIN
 				
 END;
 GO
+
+CREATE PROCEDURE INSERTVeterinarian
+	@VeterinarianID UNIQUEIDENTIFIER, 
+
+	@FirstName NVARCHAR(50),
+	@LastName NVARCHAR(50),
+	@BirthDate DATE, 
+	@PhysicalAddress NVARCHAR(225),
+	@MailingAddress NVARCHAR (225),
+	@EmailAddress NVARCHAR(100),
+    @PhoneNumber NVARCHAR(20) 
+	
+AS 
+BEGIN 
+		SET NOCOUNT ON; 
+		
+		BEGIN TRY 
+			BEGIN TRANSACTION;
+			IF NOT EXISTS (SELECT 1 FROM people.Person WHERE PersonID = @VeterinarianID)
+			BEGIN
+				EXEC INSERTPerson
+				@PersonID = @VeterinarianID , 
+				@FirstName = @FirstName,
+				@LastName = @LastName, 
+				@BirthDate= @BirthDate,
+				@PhysicalAddress = @PhysicalAddress,
+				@MailingAddress = @MailingAddress, 
+				@EmailAddress = @EmailAddress, 
+				@PhoneNumber = @PhoneNumber;
+
+                PRINT 'Person inserted successfully';
+            END
+		
+			INSERT INTO people.Veterinarian(VeterinarianID)
+			VALUES (@VeterinarianID)
+		
+		COMMIT TRANSACTION; 
+		END TRY
+		BEGIN CATCH 
+			ROLLBACK TRANSACTION
+			PRINT 'Error occured: '+ERROR_MESSAGE();
+		END CATCH; 
+	
+END;
+GO
+
+
 -- Inserts Pet Owner
 CREATE PROCEDURE InsertPetOwner
 	@PetOwnerID UNIQUEIDENTIFIER,
@@ -77,7 +124,6 @@ END;
 GO
 
 
-
 -- Inserts into the adopter table. If the AdopterID is not in the Person table it executes the insertPerson procedure and 
 -- inserts into person table 
 CREATE PROCEDURE INSERTADOPTER 
@@ -130,6 +176,7 @@ BEGIN
 END; 
 GO
 
+
 -- Inserts the Volunteer
 CREATE PROCEDURE INSERTVOLUNTEER
 	@VolunteerID UNIQUEIDENTIFIER, 
@@ -165,8 +212,8 @@ BEGIN
 				@BirthDate= @BirthDate,
 				@PhysicalAddress = @PhysicalAddress,
 				@MailingAddress = @MailingAddress, 
-				@EmailAddress = @Email, 
-				@PhoneNumber = @Phone;
+				@EmailAddress = @EmailAddress, 
+				@PhoneNumber = @PhoneNumber;
 			END
 		-- Inserts in the volunteer table 	
 		INSERT INTO people.Volunteer(VolunteerID, VolunteerPosition, StartDate, EndDate,EmergencyContactName,EmergencyContactPhone,IsActive)
@@ -181,3 +228,11 @@ BEGIN
 		
 END;
 GO
+
+
+
+			
+
+
+
+		
