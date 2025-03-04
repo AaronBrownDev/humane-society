@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"github.com/AaronBrownDev/HumaneSociety/internal/database"
+	"github.com/AaronBrownDev/HumaneSociety/internal/repository"
 	"log"
 )
 
@@ -12,6 +12,5 @@ func main() {
 	}
 	defer database.CloseDB()
 
-	fmt.Println(database.GetDB())
-
+	dogRepo := repository.NewDogRepository(database.GetDB())
 }
