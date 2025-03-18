@@ -1,0 +1,33 @@
+h1{
+    text-align: center;
+}
+
+main{
+    margin-left: 20px;
+    margin-right: 20;
+}
+
+.navbar ul{
+    list-style-type: none;
+    background-color: rgb(62, 60, 60);
+    padding: 0px;
+    margin: 0px;
+    overflow: hidden;
+}
+
+.navbar a{
+    color: white;
+    text-decoration: none;
+    padding: 15px;
+    display: block;
+    text-align: justify;
+}
+
+.navbar li{
+    float:left;
+}
+
+.navbar a:hover{
+    background-color: rgb(109, 106, 106);
+}
+
