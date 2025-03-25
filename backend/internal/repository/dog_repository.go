@@ -8,10 +8,11 @@ import (
 	"github.com/google/uuid"
 )
 
-// DogRepository CRUD Interface
+// DogRepository defines the interface for dog and dog prescription data access operations.
+// Provides methods for managing dogs and their medical prescriptions.
 type DogRepository interface {
 
-	// Dog functions
+	// Dog CRUD functions
 	GetAllDogs() ([]models.Dog, error)
 	GetAvailableDogs() ([]models.Dog, error)
 	GetDogByID(dogID uuid.UUID) (*models.Dog, error)
@@ -23,23 +24,25 @@ type DogRepository interface {
 	GetDogPrescriptions(dogID uuid.UUID) ([]models.DogPrescription, error)
 	AddDogPrescription(dogPrescription *models.DogPrescription) error
 	UpdateDogPrescription(dogPrescription *models.DogPrescription) error
-	RemoveDogPrescription(dogPrescriptionID uuid.UUID) error
+	RemoveDogPrescription(dogPrescriptionID int) error
 
-	// Etc
+	// Dog etc. functions
 	MarkAsAdopted(dogID uuid.UUID) error
 	// GetMedicalHistory(dogID uuid.UUID) ([]models.Dog, error)
 }
 
+// SQLDogRepository implements the DogRepository interface using SQL database access.
 type SQLDogRepository struct {
 	db *sql.DB
 }
 
+// NewDogRepository creates a new SQLDogRepository instance that implements the DogRepository interface.
 func NewDogRepository(db *sql.DB) DogRepository {
 	return &SQLDogRepository{db}
 }
 
-// GetAllDogs returns a slice of all dogs
-// returns error if query fails
+// GetAllDogs retrieves all dogs from the database.
+// Returns a slice of Dog models or an error if the database operation fails.
 func (r *SQLDogRepository) GetAllDogs() ([]models.Dog, error) {
 	query := `SELECT DogID, Name, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber, IsAdopted FROM shelter.Dog`
 
@@ -77,10 +80,11 @@ func (r *SQLDogRepository) GetAllDogs() ([]models.Dog, error) {
 	return dogs, nil
 }
 
-// GetDogByID returns the Dog associated with the dogID
-// returns error if query fails
+// GetDogByID retrieves a specific dog by its unique identifier.
+// Returns the dog if found or an error if the dog doesn't exist or if the query fails.
 func (r *SQLDogRepository) GetDogByID(dogID uuid.UUID) (*models.Dog, error) {
-	query := `SELECT DogID, Name, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber, IsAdopted FROM shelter.Dog WHERE DogID = @p1` // Should eventually create sql procedure
+	// TODO: Create SQL procedure for this query
+	query := `SELECT DogID, Name, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber, IsAdopted FROM shelter.Dog WHERE DogID = @p1`
 	row := r.db.QueryRow(query, dogID)
 
 	var dog models.Dog
@@ -107,20 +111,21 @@ func (r *SQLDogRepository) GetDogByID(dogID uuid.UUID) (*models.Dog, error) {
 
 }
 
-// CreateDog inserts a new Dog record with the dog information
-// returns error if query fails
+// CreateDog inserts a new dog record into the database.
+// Generates a new UUID if none is provided in the dog model.
+// Returns an error if the database operation fails.
 func (r *SQLDogRepository) CreateDog(dog *models.Dog) error {
+	// TODO: Create SQL procedure for this query
 	query := `INSERT INTO shelter.Dog
 				(DogID, Name, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber, IsAdopted)
 				VALUES
-				(@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9)` // create procedure eventually then insert here
+				(@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9)`
 
-	// creates new DogID if not given
+	// Generate a new UUID if none is provided
 	if dog.DogID == uuid.Nil {
 		dog.DogID = uuid.New()
 	}
 
-	// executes query
 	_, err := r.db.Exec(
 		query,
 		dog.DogID,
@@ -140,13 +145,14 @@ func (r *SQLDogRepository) CreateDog(dog *models.Dog) error {
 	return nil
 }
 
-// UpdateDog overwrites the Dog record that has the DogID in the given Dog struct with the information given
-// returns error if query fails
+// UpdateDog modifies an existing dog record in the database.
+// Returns an error if the dog isn't found or if the database operation fails.
 func (r *SQLDogRepository) UpdateDog(dog *models.Dog) error {
+	// TODO: Create SQL procedure for this query
 	query := `UPDATE shelter.Dog 
 				SET Name = @p1, IntakeDate = @p2, EstimatedBirthDate = @p3, Breed = @p4,
 				    Sex = @p5, Color = @p6, CageNumber = @p7, IsAdopted = @p8
-				WHERE DogID = @p9` // Might replace with procedure
+				WHERE DogID = @p9`
 
 	if dog.DogID == uuid.Nil {
 		return errors.New("dog ID cannot be nil")
@@ -177,11 +183,12 @@ func (r *SQLDogRepository) UpdateDog(dog *models.Dog) error {
 	return nil
 }
 
-// DeleteDog deletes the dog record that has the dogID in the argument
-// returns error if query fails
+// DeleteDog removes a dog record from the database.
+// Returns an error if the dog isn't found or if the database operation fails.
 func (r *SQLDogRepository) DeleteDog(dogID uuid.UUID) error {
+	// TODO: Create SQL procedure for this query
 	query := `DELETE FROM shelter.Dog
-              WHERE DogID = @p1` // Might replace with procedure
+              WHERE DogID = @p1`
 
 	if dogID == uuid.Nil {
 		return errors.New("dog ID cannot be nil")
@@ -200,10 +207,11 @@ func (r *SQLDogRepository) DeleteDog(dogID uuid.UUID) error {
 	return nil
 }
 
-// GetAvailableDogs returns a slice of all dogs that are available to be adopted
-// returns error if query fails
+// GetAvailableDogs retrieves all dogs that are available for adoption.
+// Returns a slice of available dogs or an error if the database operation fails.
 func (r *SQLDogRepository) GetAvailableDogs() ([]models.Dog, error) {
-	query := `SELECT DogID, Name, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber, IsAdopted FROM shelter.AvailableDogs`
+	// TODO: Create SQL procedure for this query
+	query := `SELECT DogID, Name, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber FROM shelter.AvailableDogs`
 
 	rows, err := r.db.Query(query)
 	if err != nil {
@@ -224,11 +232,13 @@ func (r *SQLDogRepository) GetAvailableDogs() ([]models.Dog, error) {
 			&dog.Sex,
 			&dog.Color,
 			&dog.CageNumber,
-			&dog.IsAdopted,
 		)
 		if err != nil {
 			return nil, err
 		}
+
+		// Available dogs will always be not adopted
+		dog.IsAdopted = false
 
 		dogs = append(dogs, dog)
 	}
@@ -240,12 +250,12 @@ func (r *SQLDogRepository) GetAvailableDogs() ([]models.Dog, error) {
 	return dogs, nil
 }
 
-// Dog prescription functions
-
-// GetDogPrescriptions returns a slice of DogPrescription that is associated with the dog argument
-// returns error if query fails
+// GetDogPrescriptions retrieves all prescription records for a specific dog.
+// Returns a slice of DogPrescription models or an error if the database operation fails.
 func (r *SQLDogRepository) GetDogPrescriptions(dogID uuid.UUID) ([]models.DogPrescription, error) {
-	query := `SELECT PrescriptionID, DogID, MedicineID, Dosage, Frequency, StartDate, EndDate, Notes, VetPrescriberID FROM medical.DogPrescription`
+	// TODO: Create SQL procedure for this query
+	query := `SELECT PrescriptionID, DogID, MedicineID, Dosage, Frequency, StartDate, EndDate, Notes, VetPrescriberID FROM medical.DogPrescription
+				WHERE DogID = @p1`
 
 	rows, err := r.db.Query(query, dogID)
 	if err != nil {
@@ -281,28 +291,111 @@ func (r *SQLDogRepository) GetDogPrescriptions(dogID uuid.UUID) ([]models.DogPre
 	return prescriptions, nil
 }
 
-// AddDogPrescription returns error if query fails
+// AddDogPrescription creates a new prescription record for a dog.
+// Returns an error if the insert operation fails or if no rows are affected.
 func (r *SQLDogRepository) AddDogPrescription(dogPrescription *models.DogPrescription) error {
+	// TODO: Create SQL procedure for this query
+	query := `INSERT INTO medical.DogPrescription
+				(DogID, MedicineID, Dosage, Frequency, StartDate, EndDate, Notes, VetPrescriberID)
+				VALUES
+				(@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)`
+
+	result, err := r.db.Exec(
+		query,
+		dogPrescription.DogID,
+		dogPrescription.MedicineID,
+		dogPrescription.Dosage,
+		dogPrescription.Frequency,
+		dogPrescription.StartDate,
+		dogPrescription.EndDate,
+		dogPrescription.Notes,
+		dogPrescription.VetPrescriberID,
+	)
+	if err != nil {
+		return fmt.Errorf("error adding dog prescription: %w", err)
+	}
+
+	if rowsAffected, err := result.RowsAffected(); rowsAffected == 0 {
+		if err != nil {
+			return err
+		}
+		return errors.New("dog prescription insert failed")
+	}
 
 	return nil
 }
 
-// UpdateDogPrescription returns error if query fails
+// UpdateDogPrescription modifies an existing prescription record.
+// Returns an error if the prescription isn't found or if the database operation fails.
 func (r *SQLDogRepository) UpdateDogPrescription(dogPrescription *models.DogPrescription) error {
+	// TODO: Create SQL procedure for this query
+	query := `UPDATE medical.DogPrescription
+				SET DogID = @p2, MedicineID = @p3, Dosage = @p4, Frequency = @p5, StartDate = @p6, EndDate = @p7, Notes = @p8, VetPrescriberID = @p9
+				WHERE PrescriptionID = @p1`
+
+	result, err := r.db.Exec(query,
+		dogPrescription.PrescriptionID,
+		dogPrescription.DogID,
+		dogPrescription.MedicineID,
+		dogPrescription.Dosage,
+		dogPrescription.Frequency,
+		dogPrescription.StartDate,
+		dogPrescription.EndDate,
+		dogPrescription.Notes,
+		dogPrescription.VetPrescriberID,
+	)
+	if err != nil {
+		return fmt.Errorf("error updating dog prescription: %w", err)
+	}
+	if rowsAffected, err := result.RowsAffected(); rowsAffected == 0 {
+		if err != nil {
+			return err
+		}
+		return errors.New("dog prescription not found")
+	}
 
 	return nil
 }
 
-// RemoveDogPrescription returns error if query fails
-func (r *SQLDogRepository) RemoveDogPrescription(dogPrescriptionID uuid.UUID) error {
+// RemoveDogPrescription deletes a prescription record from the database.
+// Returns an error if the prescription isn't found or if the database operation fails.
+func (r *SQLDogRepository) RemoveDogPrescription(dogPrescriptionID int) error {
+	// TODO: Create SQL procedure for this query
+	query := `DELETE FROM medical.DogPrescription
+				WHERE PrescriptionID = @p1`
+
+	result, err := r.db.Exec(query, dogPrescriptionID)
+	if err != nil {
+		return fmt.Errorf("error removing dog prescription: %w", err)
+	}
+	if rowsAffected, err := result.RowsAffected(); rowsAffected == 0 {
+		if err != nil {
+			return err
+		}
+		return errors.New("dog prescription not found")
+	}
 
 	return nil
 }
 
-// Etc
-
-// MarkAsAdopted returns error if query fails
+// MarkAsAdopted updates a dog's adoption status to adopted (IsAdopted = true).
+// Returns an error if the dog isn't found or if the database operation fails.
 func (r *SQLDogRepository) MarkAsAdopted(dogID uuid.UUID) error {
+	// TODO: Create SQL procedure for this query
+	query := `UPDATE shelter.Dog
+				SET IsAdopted = 1
+				WHERE DogID = @p1`
+
+	result, err := r.db.Exec(query, dogID)
+	if err != nil {
+		return fmt.Errorf("error updating dog adoption status: %w", err)
+	}
+	if rowsAffected, err := result.RowsAffected(); rowsAffected == 0 {
+		if err != nil {
+			return err
+		}
+		return errors.New("dog not found")
+	}
 
 	return nil
 }
