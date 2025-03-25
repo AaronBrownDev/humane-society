@@ -12,12 +12,12 @@ import (
 type DogRepository interface {
 
 	// Dog functions
-	GetAll() ([]models.Dog, error)
-	GetAvailable() ([]models.Dog, error)
-	GetByID(dogID uuid.UUID) (*models.Dog, error)
-	Create(dog *models.Dog) error
-	Update(dog *models.Dog) error
-	Delete(dogID uuid.UUID) error
+	GetAllDogs() ([]models.Dog, error)
+	GetAvailableDogs() ([]models.Dog, error)
+	GetDogByID(dogID uuid.UUID) (*models.Dog, error)
+	CreateDog(dog *models.Dog) error
+	UpdateDog(dog *models.Dog) error
+	DeleteDog(dogID uuid.UUID) error
 
 	// Dog prescription functions
 	GetDogPrescriptions(dogID uuid.UUID) ([]models.DogPrescription, error)
@@ -38,9 +38,9 @@ func NewDogRepository(db *sql.DB) DogRepository {
 	return &SQLDogRepository{db}
 }
 
-// GetAll returns a slice of all dogs
+// GetAllDogs returns a slice of all dogs
 // returns error if query fails
-func (r *SQLDogRepository) GetAll() ([]models.Dog, error) {
+func (r *SQLDogRepository) GetAllDogs() ([]models.Dog, error) {
 	query := `SELECT DogID, Name, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber, IsAdopted FROM shelter.Dog`
 
 	rows, err := r.db.Query(query)
@@ -77,9 +77,9 @@ func (r *SQLDogRepository) GetAll() ([]models.Dog, error) {
 	return dogs, nil
 }
 
-// GetByID returns the Dog associated with the dogID
+// GetDogByID returns the Dog associated with the dogID
 // returns error if query fails
-func (r *SQLDogRepository) GetByID(dogID uuid.UUID) (*models.Dog, error) {
+func (r *SQLDogRepository) GetDogByID(dogID uuid.UUID) (*models.Dog, error) {
 	query := `SELECT DogID, Name, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber, IsAdopted FROM shelter.Dog WHERE DogID = @p1` // Should eventually create sql procedure
 	row := r.db.QueryRow(query, dogID)
 
@@ -107,9 +107,9 @@ func (r *SQLDogRepository) GetByID(dogID uuid.UUID) (*models.Dog, error) {
 
 }
 
-// Create inserts a new Dog record with the dog information
+// CreateDog inserts a new Dog record with the dog information
 // returns error if query fails
-func (r *SQLDogRepository) Create(dog *models.Dog) error {
+func (r *SQLDogRepository) CreateDog(dog *models.Dog) error {
 	query := `INSERT INTO shelter.Dog
 				(DogID, Name, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber, IsAdopted)
 				VALUES
@@ -140,9 +140,9 @@ func (r *SQLDogRepository) Create(dog *models.Dog) error {
 	return nil
 }
 
-// Update overwrites the Dog record that has the DogID in the given Dog struct with the information given
+// UpdateDog overwrites the Dog record that has the DogID in the given Dog struct with the information given
 // returns error if query fails
-func (r *SQLDogRepository) Update(dog *models.Dog) error {
+func (r *SQLDogRepository) UpdateDog(dog *models.Dog) error {
 	query := `UPDATE shelter.Dog 
 				SET Name = @p1, IntakeDate = @p2, EstimatedBirthDate = @p3, Breed = @p4,
 				    Sex = @p5, Color = @p6, CageNumber = @p7, IsAdopted = @p8
@@ -177,9 +177,9 @@ func (r *SQLDogRepository) Update(dog *models.Dog) error {
 	return nil
 }
 
-// Delete deletes the dog record that has the dogID in the argument
+// DeleteDog deletes the dog record that has the dogID in the argument
 // returns error if query fails
-func (r *SQLDogRepository) Delete(dogID uuid.UUID) error {
+func (r *SQLDogRepository) DeleteDog(dogID uuid.UUID) error {
 	query := `DELETE FROM shelter.Dog
               WHERE DogID = @p1` // Might replace with procedure
 
@@ -200,9 +200,9 @@ func (r *SQLDogRepository) Delete(dogID uuid.UUID) error {
 	return nil
 }
 
-// GetAvailable returns a slice of all dogs that are available to be adopted
+// GetAvailableDogs returns a slice of all dogs that are available to be adopted
 // returns error if query fails
-func (r *SQLDogRepository) GetAvailable() ([]models.Dog, error) {
+func (r *SQLDogRepository) GetAvailableDogs() ([]models.Dog, error) {
 	query := `SELECT DogID, Name, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber, IsAdopted FROM shelter.AvailableDogs`
 
 	rows, err := r.db.Query(query)
@@ -278,7 +278,7 @@ func (r *SQLDogRepository) GetDogPrescriptions(dogID uuid.UUID) ([]models.DogPre
 		return nil, err
 	}
 
-	return nil, nil
+	return prescriptions, nil
 }
 
 // AddDogPrescription returns error if query fails
