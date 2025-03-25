@@ -122,6 +122,7 @@ func (r *SQLDogRepository) CreateDog(dog *models.Dog) error {
 				(@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9)`
 
 	// Generate a new UUID if none is provided
+	// TODO: Not sure if new UUID can cause errors have to look into
 	if dog.DogID == uuid.Nil {
 		dog.DogID = uuid.New()
 	}
