@@ -1,8 +1,7 @@
-export default function Section2(){
+export default function Section1(){
     return(
-        <main >
-            <h1>Section 1 goes here </h1>
-            
+        <main className=" main-section1" >
+            <img src="./src/assets/HumaneSocietyfirstpic2.jpeg" />           
         </main>
     )
 }
