@@ -1,3 +1,7 @@
+.body{
+    margin: 0;
+}
+
 .nav-bar{
     padding-block: 0px;
     display: flex;
@@ -24,6 +28,14 @@
     border-block-end: 10px solid white;
     
   }
+
+
+.main-section1 img {
+    padding-block: 0%;
+    
+
+}
+
 
 
 .main-section2{
@@ -66,6 +78,44 @@
 
 }
 
+.main-section4{
+    display:flex;
+    justify-content: space-between;
+    padding-block: 20px;
+    
+}
+
+.main-section4 div{
+    padding-right: 10px;
+}
+
+.main-section6{
+    
+    background-color: rgb(5, 5, 105);
+    color: white;
+}
+.main-section6 div{
+    display: flex;
+}
+.main-section6 h3{
+    max-width:  1000px;
+
+}
+
+.main-section7 {
+    text-align: center;
+    background-color: rgb(85, 195, 238);
+}
+
+.main-section7 .body{
+    display: flex;
+    justify-content: space-between;
+    max-width: 1200px;
+}
+
+.main-section8{
+    text-align: center;
+}
 
  
 
