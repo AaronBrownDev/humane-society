@@ -8,7 +8,7 @@ import (
 
 func NewRouter(db *sql.DB) http.Handler {
 	// Initialize Repos
-	repoStorage := repository.NewStorage(db)
+	repoStorage := repository.NewMSSQLStorage(db)
 
 	// TODO Initialize handlers with their respective repos
 
