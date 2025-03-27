@@ -2,13 +2,13 @@ package repository
 
 import (
 	"database/sql"
-	"github.com/AaronBrownDev/HumaneSociety/internal/models"
+	"github.com/AaronBrownDev/HumaneSociety/internal/domain"
 	"github.com/google/uuid"
 )
 
 type PetOwnerRepository interface {
-	GetAll() ([]models.PetOwner, error)
-	GetByID(PetOwnerID uuid.UUID) (*models.PetOwner, error)
+	GetAll() ([]domain.PetOwner, error)
+	GetByID(PetOwnerID uuid.UUID) (*domain.PetOwner, error)
 }
 
 type SQLPetOwnerRepository struct {
@@ -19,7 +19,7 @@ func NewPetOwnerRepository(db *sql.DB) *SQLPetOwnerRepository {
 	return &SQLPetOwnerRepository{db: db}
 }
 
-func (r *SQLPetOwnerRepository) GetAll() ([]models.PetOwner, error) {
+func (r *SQLPetOwnerRepository) GetAll() ([]domain.PetOwner, error) {
 	query := `SELECT PetOwnerID, VeterinarianID, HasSterilizedPets, HasVaccinatedPets, UsesVetHeartWormPrevention FROM people.PetOwner`
 
 	rows, err := r.db.Query(query)
@@ -28,9 +28,9 @@ func (r *SQLPetOwnerRepository) GetAll() ([]models.PetOwner, error) {
 	}
 	defer rows.Close()
 
-	var petOwners []models.PetOwner
+	var petOwners []domain.PetOwner
 	for rows.Next() {
-		var petOwner models.PetOwner
+		var petOwner domain.PetOwner
 		err := rows.Scan(
 			&petOwner.PetOwnerID,
 			&petOwner.VeterinarianID,

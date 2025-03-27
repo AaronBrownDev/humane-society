@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/AaronBrownDev/HumaneSociety/internal/models"
+	"github.com/AaronBrownDev/HumaneSociety/internal/domain"
 	"github.com/google/uuid"
 )
 
@@ -13,22 +13,23 @@ import (
 type DogRepository interface {
 
 	// Dog CRUD functions
-	GetAllDogs() ([]models.Dog, error)
-	GetAvailableDogs() ([]models.Dog, error)
-	GetDogByID(dogID uuid.UUID) (*models.Dog, error)
-	CreateDog(dog *models.Dog) error
-	UpdateDog(dog *models.Dog) error
+	Repository[domain.Dog, uuid.UUID]
+	GetAllDogs() ([]domain.Dog, error)
+	GetDogByID(dogID uuid.UUID) (*domain.Dog, error)
+	CreateDog(dog *domain.Dog) error
+	UpdateDog(dog *domain.Dog) error
 	DeleteDog(dogID uuid.UUID) error
 
 	// Dog prescription functions
-	GetDogPrescriptions(dogID uuid.UUID) ([]models.DogPrescription, error)
-	AddDogPrescription(dogPrescription *models.DogPrescription) error
-	UpdateDogPrescription(dogPrescription *models.DogPrescription) error
+	GetDogPrescriptions(dogID uuid.UUID) ([]domain.DogPrescription, error)
+	AddDogPrescription(dogPrescription *domain.DogPrescription) error
+	UpdateDogPrescription(dogPrescription *domain.DogPrescription) error
 	RemoveDogPrescription(dogPrescriptionID int) error
 
 	// Dog etc. functions
+	GetAvailableDogs() ([]domain.Dog, error)
 	MarkAsAdopted(dogID uuid.UUID) error
-	// GetMedicalHistory(dogID uuid.UUID) ([]models.Dog, error)
+	// GetMedicalHistory(dogID uuid.UUID) ([]domain.Dog, error)
 }
 
 // SQLDogRepository implements the DogRepository interface using SQL database access.
@@ -42,8 +43,8 @@ func NewDogRepository(db *sql.DB) DogRepository {
 }
 
 // GetAllDogs retrieves all dogs from the database.
-// Returns a slice of Dog models or an error if the database operation fails.
-func (r *SQLDogRepository) GetAllDogs() ([]models.Dog, error) {
+// Returns a slice of Dog domain or an error if the database operation fails.
+func (r *SQLDogRepository) GetAllDogs() ([]domain.Dog, error) {
 	query := `SELECT DogID, Name, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber, IsAdopted FROM shelter.Dog`
 
 	rows, err := r.db.Query(query)
@@ -52,9 +53,9 @@ func (r *SQLDogRepository) GetAllDogs() ([]models.Dog, error) {
 	}
 	defer rows.Close()
 
-	var dogs []models.Dog
+	var dogs []domain.Dog
 	for rows.Next() {
-		var dog models.Dog
+		var dog domain.Dog
 		err = rows.Scan(
 			&dog.DogID,
 			&dog.Name,
@@ -82,12 +83,12 @@ func (r *SQLDogRepository) GetAllDogs() ([]models.Dog, error) {
 
 // GetDogByID retrieves a specific dog by its unique identifier.
 // Returns the dog if found or an error if the dog doesn't exist or if the query fails.
-func (r *SQLDogRepository) GetDogByID(dogID uuid.UUID) (*models.Dog, error) {
+func (r *SQLDogRepository) GetDogByID(dogID uuid.UUID) (*domain.Dog, error) {
 	// TODO: Create SQL procedure for this query
 	query := `SELECT DogID, Name, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber, IsAdopted FROM shelter.Dog WHERE DogID = @p1`
 	row := r.db.QueryRow(query, dogID)
 
-	var dog models.Dog
+	var dog domain.Dog
 
 	err := row.Scan(
 		&dog.DogID,
@@ -114,7 +115,7 @@ func (r *SQLDogRepository) GetDogByID(dogID uuid.UUID) (*models.Dog, error) {
 // CreateDog inserts a new dog record into the database.
 // Generates a new UUID if none is provided in the dog model.
 // Returns an error if the database operation fails.
-func (r *SQLDogRepository) CreateDog(dog *models.Dog) error {
+func (r *SQLDogRepository) CreateDog(dog *domain.Dog) error {
 	// TODO: Create SQL procedure for this query
 	query := `INSERT INTO shelter.Dog
 				(DogID, Name, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber, IsAdopted)
@@ -148,7 +149,7 @@ func (r *SQLDogRepository) CreateDog(dog *models.Dog) error {
 
 // UpdateDog modifies an existing dog record in the database.
 // Returns an error if the dog isn't found or if the database operation fails.
-func (r *SQLDogRepository) UpdateDog(dog *models.Dog) error {
+func (r *SQLDogRepository) UpdateDog(dog *domain.Dog) error {
 	// TODO: Create SQL procedure for this query
 	query := `UPDATE shelter.Dog 
 				SET Name = @p1, IntakeDate = @p2, EstimatedBirthDate = @p3, Breed = @p4,
@@ -210,7 +211,7 @@ func (r *SQLDogRepository) DeleteDog(dogID uuid.UUID) error {
 
 // GetAvailableDogs retrieves all dogs that are available for adoption.
 // Returns a slice of available dogs or an error if the database operation fails.
-func (r *SQLDogRepository) GetAvailableDogs() ([]models.Dog, error) {
+func (r *SQLDogRepository) GetAvailableDogs() ([]domain.Dog, error) {
 	// TODO: Create SQL procedure for this query
 	query := `SELECT DogID, Name, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber FROM shelter.AvailableDogs`
 
@@ -220,9 +221,9 @@ func (r *SQLDogRepository) GetAvailableDogs() ([]models.Dog, error) {
 	}
 	defer rows.Close()
 
-	var dogs []models.Dog
+	var dogs []domain.Dog
 	for rows.Next() {
-		var dog models.Dog
+		var dog domain.Dog
 
 		err = rows.Scan(
 			&dog.DogID,
@@ -252,8 +253,8 @@ func (r *SQLDogRepository) GetAvailableDogs() ([]models.Dog, error) {
 }
 
 // GetDogPrescriptions retrieves all prescription records for a specific dog.
-// Returns a slice of DogPrescription models or an error if the database operation fails.
-func (r *SQLDogRepository) GetDogPrescriptions(dogID uuid.UUID) ([]models.DogPrescription, error) {
+// Returns a slice of DogPrescription domain or an error if the database operation fails.
+func (r *SQLDogRepository) GetDogPrescriptions(dogID uuid.UUID) ([]domain.DogPrescription, error) {
 	// TODO: Create SQL procedure for this query
 	query := `SELECT PrescriptionID, DogID, MedicineID, Dosage, Frequency, StartDate, EndDate, Notes, VetPrescriberID FROM medical.DogPrescription
 				WHERE DogID = @p1`
@@ -264,9 +265,9 @@ func (r *SQLDogRepository) GetDogPrescriptions(dogID uuid.UUID) ([]models.DogPre
 	}
 	defer rows.Close()
 
-	var prescriptions []models.DogPrescription
+	var prescriptions []domain.DogPrescription
 	for rows.Next() {
-		var prescription models.DogPrescription
+		var prescription domain.DogPrescription
 		err = rows.Scan(
 			&prescription.PrescriptionID,
 			&prescription.DogID,
@@ -294,7 +295,7 @@ func (r *SQLDogRepository) GetDogPrescriptions(dogID uuid.UUID) ([]models.DogPre
 
 // AddDogPrescription creates a new prescription record for a dog.
 // Returns an error if the insert operation fails or if no rows are affected.
-func (r *SQLDogRepository) AddDogPrescription(dogPrescription *models.DogPrescription) error {
+func (r *SQLDogRepository) AddDogPrescription(dogPrescription *domain.DogPrescription) error {
 	// TODO: Create SQL procedure for this query
 	query := `INSERT INTO medical.DogPrescription
 				(DogID, MedicineID, Dosage, Frequency, StartDate, EndDate, Notes, VetPrescriberID)
@@ -328,7 +329,7 @@ func (r *SQLDogRepository) AddDogPrescription(dogPrescription *models.DogPrescri
 
 // UpdateDogPrescription modifies an existing prescription record.
 // Returns an error if the prescription isn't found or if the database operation fails.
-func (r *SQLDogRepository) UpdateDogPrescription(dogPrescription *models.DogPrescription) error {
+func (r *SQLDogRepository) UpdateDogPrescription(dogPrescription *domain.DogPrescription) error {
 	// TODO: Create SQL procedure for this query
 	query := `UPDATE medical.DogPrescription
 				SET DogID = @p2, MedicineID = @p3, Dosage = @p4, Frequency = @p5, StartDate = @p6, EndDate = @p7, Notes = @p8, VetPrescriberID = @p9

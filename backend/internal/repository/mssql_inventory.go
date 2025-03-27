@@ -2,24 +2,24 @@ package repository
 
 import (
 	"database/sql"
-	"github.com/AaronBrownDev/HumaneSociety/internal/models"
+	"github.com/AaronBrownDev/HumaneSociety/internal/domain"
 	"github.com/google/uuid"
 )
 
 type InventoryRepository interface {
 	// ItemCatalog CRUD
 	// TODO: Look into names. ItemCatalog makes it confusing
-	GetEntireItemCatalog() ([]models.ItemCatalog, error)
-	GetItemCatalog(itemID uuid.UUID) (*models.ItemCatalog, error)
-	CreateItemCatalog(item *models.ItemCatalog) error
-	UpdateItemCatalog(item *models.ItemCatalog) error
+	GetEntireItemCatalog() ([]domain.ItemCatalog, error)
+	GetItemCatalog(itemID uuid.UUID) (*domain.ItemCatalog, error)
+	CreateItemCatalog(item *domain.ItemCatalog) error
+	UpdateItemCatalog(item *domain.ItemCatalog) error
 	DeleteItemCatalog(itemID uuid.UUID) error
 
 	// Supply CRUD
-	GetSupplies() ([]models.Supply, error)
-	GetSupply(supplyID int) (*models.Supply, error)
-	AddSupply(supply *models.Supply) error
-	UpdateSupply(supply *models.Supply) error
+	GetSupplies() ([]domain.Supply, error)
+	GetSupply(supplyID int) (*domain.Supply, error)
+	AddSupply(supply *domain.Supply) error
+	UpdateSupply(supply *domain.Supply) error
 	DeleteSupply(supplyID int) error
 }
 
