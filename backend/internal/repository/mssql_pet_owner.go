@@ -1,52 +1,51 @@
 package repository
 
 import (
-	"database/sql"
+	"context"
 	"github.com/AaronBrownDev/HumaneSociety/internal/domain"
 	"github.com/google/uuid"
 )
 
-type PetOwnerRepository interface {
-	GetAll() ([]domain.PetOwner, error)
-	GetByID(PetOwnerID uuid.UUID) (*domain.PetOwner, error)
+type mssqlPetOwnerRepository struct {
+	conn Connection
 }
 
-type SQLPetOwnerRepository struct {
-	db *sql.DB
+func NewMSSQLPetOwner(conn Connection) domain.PetOwnerRepository {
+	return &mssqlPetOwnerRepository{conn: conn}
 }
 
-func NewPetOwnerRepository(db *sql.DB) *SQLPetOwnerRepository {
-	return &SQLPetOwnerRepository{db: db}
+// TODO: Implement functions
+func (r *mssqlPetOwnerRepository) GetAll(ctx context.Context) ([]domain.PetOwner, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (r *SQLPetOwnerRepository) GetAll() ([]domain.PetOwner, error) {
-	query := `SELECT PetOwnerID, VeterinarianID, HasSterilizedPets, HasVaccinatedPets, UsesVetHeartWormPrevention FROM people.PetOwner`
+func (r *mssqlPetOwnerRepository) GetByID(ctx context.Context, petOwnerID uuid.UUID) (*domain.PetOwner, error) {
+	//TODO implement me
+	panic("implement me")
+}
 
-	rows, err := r.db.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+func (r *mssqlPetOwnerRepository) Create(ctx context.Context, petOwner *domain.PetOwner) error {
+	//TODO implement me
+	panic("implement me")
+}
 
-	var petOwners []domain.PetOwner
-	for rows.Next() {
-		var petOwner domain.PetOwner
-		err := rows.Scan(
-			&petOwner.PetOwnerID,
-			&petOwner.VeterinarianID,
-			&petOwner.HasSterilizedPets,
-			&petOwner.HasVaccinatedPets,
-			&petOwner.UsesVetHeartWormPrevention,
-		)
-		if err != nil {
-			return nil, err
-		}
-		petOwners = append(petOwners, petOwner)
-	}
+func (r *mssqlPetOwnerRepository) Update(ctx context.Context, petOwner *domain.PetOwner) error {
+	//TODO implement me
+	panic("implement me")
+}
 
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
+func (r *mssqlPetOwnerRepository) Delete(ctx context.Context, petOwnerID uuid.UUID) error {
+	//TODO implement me
+	panic("implement me")
+}
 
-	return petOwners, nil
+func (r *mssqlPetOwnerRepository) GetByVeterinarianID(ctx context.Context, veterinarianID uuid.UUID) ([]domain.PetOwner, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *mssqlPetOwnerRepository) GetWithPets(ctx context.Context, petOwnerID uuid.UUID) (*domain.PetOwner, []domain.PetOwnerPet, error) {
+	//TODO implement me
+	panic("implement me")
 }

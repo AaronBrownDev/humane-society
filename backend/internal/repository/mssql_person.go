@@ -1,26 +1,24 @@
 package repository
 
 import (
-	"database/sql"
+	"context"
 	"errors"
 	"fmt"
 	"github.com/AaronBrownDev/HumaneSociety/internal/domain"
 	"github.com/google/uuid"
 )
 
-type SQLPersonRepository struct {
-	db *sql.DB
+type mssqlPersonRepository struct {
+	conn Connection
 }
 
-func NewPersonRepository(db *sql.DB) domain.PersonRepository {
-	return &SQLPersonRepository{db}
+func NewMSSQLPerson(conn Connection) domain.PersonRepository {
+	return &mssqlPersonRepository{conn: conn}
 }
 
-func (r *SQLPersonRepository) GetAll() ([]domain.Person, error) {
-	query := `
-			SELECT PersonID, FirstName, LastName, BirthDate, PhysicalAddress, MailingAddress, EmailAddress, PhoneNumber FROM people.Person
-	`
-	rows, err := r.db.Query(query)
+// fetch is a helper function to retrieve multiple person records
+func (r *mssqlPersonRepository) fetch(ctx context.Context, query string, args ...interface{}) ([]domain.Person, error) {
+	rows, err := r.conn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -52,16 +50,23 @@ func (r *SQLPersonRepository) GetAll() ([]domain.Person, error) {
 
 	return people, nil
 }
-func (r *SQLPersonRepository) GetByID(personID uuid.UUID) (*domain.Person, error) {
-	query := `
-			SELECT PersonID, FirstName, LastName, BirthDate, PhysicalAddress, MailingAddress, EmailAddress, PhoneNumber FROM people.Person 
-			WHERE PersonID = @p1
-	`
-	row := r.db.QueryRow(query, personID)
+
+// GetAll retrieves all people from the database
+func (r *mssqlPersonRepository) GetAll(ctx context.Context) ([]domain.Person, error) {
+	query := `SELECT PersonID, FirstName, LastName, BirthDate, PhysicalAddress, MailingAddress, EmailAddress, PhoneNumber 
+              FROM people.Person`
+
+	return r.fetch(ctx, query)
+}
+
+// GetByID retrieves a specific person by their ID
+func (r *mssqlPersonRepository) GetByID(ctx context.Context, personID uuid.UUID) (*domain.Person, error) {
+	query := `SELECT PersonID, FirstName, LastName, BirthDate, PhysicalAddress, MailingAddress, EmailAddress, PhoneNumber 
+              FROM people.Person 
+              WHERE PersonID = @p1`
 
 	var person domain.Person
-
-	err := row.Scan(
+	err := r.conn.QueryRowContext(ctx, query, personID).Scan(
 		&person.PersonID,
 		&person.FirstName,
 		&person.LastName,
@@ -71,9 +76,10 @@ func (r *SQLPersonRepository) GetByID(personID uuid.UUID) (*domain.Person, error
 		&person.EmailAddress,
 		&person.PhoneNumber,
 	)
+
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errors.New("person not found")
+		if errors.Is(err, errors.New("sql: no rows in result set")) {
+			return nil, domain.ErrNotFound
 		}
 		return nil, err
 	}
@@ -81,19 +87,20 @@ func (r *SQLPersonRepository) GetByID(personID uuid.UUID) (*domain.Person, error
 	return &person, nil
 }
 
-func (r *SQLPersonRepository) Create(person *domain.Person) error {
-	query := `
-			INSERT INTO people.Person
-			(PersonID, FirstName, LastName, BirthDate, PhysicalAddress, MailingAddress, EmailAddress, PhoneNumber)
-			VALUES
-			(@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)
-	`
+// Create inserts a new person record into the database
+func (r *mssqlPersonRepository) Create(ctx context.Context, person *domain.Person) error {
+	query := `INSERT INTO people.Person
+              (PersonID, FirstName, LastName, BirthDate, PhysicalAddress, MailingAddress, EmailAddress, PhoneNumber)
+              VALUES
+              (@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)`
 
+	// Generate a new UUID if none is provided
 	if person.PersonID == uuid.Nil {
 		person.PersonID = uuid.New()
 	}
 
-	_, err := r.db.Exec(
+	result, err := r.conn.ExecContext(
+		ctx,
 		query,
 		person.PersonID,
 		person.FirstName,
@@ -108,17 +115,30 @@ func (r *SQLPersonRepository) Create(person *domain.Person) error {
 		return fmt.Errorf("error creating person: %w", err)
 	}
 
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return domain.ErrDatabaseError
+	}
+
 	return nil
 }
 
-func (r *SQLPersonRepository) Update(person *domain.Person) error {
-	query := `
-			UPDATE people.Person
-			SET FirstName = @p1, LastName = @p2, BirthDate = @p3, PhysicalAddress = @p4, MailingAddress = @p5, EmailAddress = @p6, PhoneNumber = @p7
-			WHERE PersonID = @p8
-	`
+// Update modifies an existing person record in the database
+func (r *mssqlPersonRepository) Update(ctx context.Context, person *domain.Person) error {
+	query := `UPDATE people.Person
+              SET FirstName = @p1, LastName = @p2, BirthDate = @p3, PhysicalAddress = @p4,
+                  MailingAddress = @p5, EmailAddress = @p6, PhoneNumber = @p7
+              WHERE PersonID = @p8`
 
-	result, err := r.db.Exec(
+	if person.PersonID == uuid.Nil {
+		return domain.ErrInvalidInput
+	}
+
+	result, err := r.conn.ExecContext(
+		ctx,
 		query,
 		person.FirstName,
 		person.LastName,
@@ -133,31 +153,36 @@ func (r *SQLPersonRepository) Update(person *domain.Person) error {
 		return fmt.Errorf("error updating person: %w", err)
 	}
 
-	if rowsAffected, err := result.RowsAffected(); rowsAffected == 0 {
-		if err != nil {
-			return err
-		}
-		return errors.New("person not found")
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return domain.ErrNotFound
 	}
 
 	return nil
 }
 
-func (r *SQLPersonRepository) Delete(personID uuid.UUID) error {
-	query := `
-			DELETE FROM people.Person WHERE PersonID = @p1
-	`
+// Delete removes a person record from the database
+func (r *mssqlPersonRepository) Delete(ctx context.Context, personID uuid.UUID) error {
+	query := `DELETE FROM people.Person WHERE PersonID = @p1`
 
-	result, err := r.db.Exec(query, personID)
+	if personID == uuid.Nil {
+		return domain.ErrInvalidInput
+	}
+
+	result, err := r.conn.ExecContext(ctx, query, personID)
 	if err != nil {
 		return fmt.Errorf("error deleting person: %w", err)
 	}
 
-	if rowsAffected, err := result.RowsAffected(); rowsAffected == 0 {
-		if err != nil {
-			return err
-		}
-		return errors.New("person not found")
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return domain.ErrNotFound
 	}
 
 	return nil
