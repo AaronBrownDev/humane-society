@@ -72,7 +72,7 @@ func (a *api) createDogHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.respondJSON(w, http.StatusCreated, dog)
+	a.respondJSON(w, http.StatusCreated, map[string]string{"result": "success"})
 }
 
 func (a *api) updateDogHandler(w http.ResponseWriter, r *http.Request) {
@@ -98,7 +98,7 @@ func (a *api) updateDogHandler(w http.ResponseWriter, r *http.Request) {
 		a.respondError(w, http.StatusInternalServerError, err.Error())
 	}
 
-	a.respondJSON(w, http.StatusOK, dog)
+	a.respondJSON(w, http.StatusOK, map[string]string{"result": "success"})
 }
 
 func (a *api) deleteDogHandler(w http.ResponseWriter, r *http.Request) {
