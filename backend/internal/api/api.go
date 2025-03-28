@@ -71,7 +71,7 @@ func (a *api) Routes() http.Handler {
 	})
 
 	// TODO: finish the routes
-	router.Route("/api/", func(r chi.Router) {})
+	//router.Route("/api/", func(r chi.Router) {})
 
 	return router
 }
