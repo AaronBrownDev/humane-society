@@ -27,6 +27,7 @@ func (r *mssqlDogRepository) fetch(ctx context.Context, query string, args ...in
 	var dogs []domain.Dog
 	for rows.Next() {
 		var dog domain.Dog
+
 		err = rows.Scan(
 			&dog.DogID,
 			&dog.Name,
@@ -40,6 +41,11 @@ func (r *mssqlDogRepository) fetch(ctx context.Context, query string, args ...in
 		)
 		if err != nil {
 			return nil, err
+		}
+
+		dog.DogID, err = SwapUUIDFormat(dog.DogID)
+		if err != nil {
+			return nil, fmt.Errorf("error converting UUID: %w", err)
 		}
 
 		dogs = append(dogs, dog)
@@ -92,6 +98,11 @@ func (r *mssqlDogRepository) GetByID(ctx context.Context, dogID uuid.UUID) (*dom
 			return nil, domain.ErrNotFound
 		}
 		return nil, err
+	}
+
+	dog.DogID, err = SwapUUIDFormat(dog.DogID)
+	if err != nil {
+		return nil, fmt.Errorf("error converting UUID: %w", err)
 	}
 
 	return &dog, nil
