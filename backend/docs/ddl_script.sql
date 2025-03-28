@@ -379,7 +379,8 @@ SELECT
     d.Breed,
     d.Sex,
     d.Color,
-    d.CageNumber
+    d.CageNumber,
+    d.IsAdopted
 FROM
     shelter.Dog AS d
 WHERE

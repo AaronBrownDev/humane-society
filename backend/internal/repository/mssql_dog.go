@@ -62,20 +62,10 @@ func (r *mssqlDogRepository) GetAll(ctx context.Context) ([]domain.Dog, error) {
 
 // GetAvailable retrieves all dogs that are available for adoption
 func (r *mssqlDogRepository) GetAvailable(ctx context.Context) ([]domain.Dog, error) {
-	query := `SELECT DogID, Name, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber
+	query := `SELECT DogID, Name, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber, IsAdopted
               FROM shelter.AvailableDogs`
 
-	dogs, err := r.fetch(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-
-	// Set IsAdopted to false for all dogs from the view
-	for i := range dogs {
-		dogs[i].IsAdopted = false
-	}
-
-	return dogs, nil
+	return r.fetch(ctx, query)
 }
 
 // GetByID retrieves a specific dog by its unique identifier
