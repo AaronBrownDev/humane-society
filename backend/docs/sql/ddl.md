@@ -1,3 +1,10 @@
+# Humane Society Database Schema
+
+This document contains the Data Definition Language (DDL) statements for creating the Humane Society of Northwest Louisiana Management System database schema.
+
+## Database and Schema Creation
+
+```sql
 CREATE DATABASE HumaneSociety;
 GO
 
@@ -16,7 +23,13 @@ GO
 
 CREATE SCHEMA audit;
 GO
+```
 
+## Audit System
+
+The audit system tracks changes to database records for accountability and historical tracking.
+
+```sql
 -- AUDIT SYSTEM
 CREATE TABLE audit.ChangeLog (
     LogID INT IDENTITY(1,1) NOT NULL,
@@ -33,9 +46,15 @@ CREATE TABLE audit.ChangeLog (
     CONSTRAINT CK_ChangeLog_AuditActionType CHECK (AuditActionType IN ('I', 'U', 'D'))
 );
 GO
+```
 
--- BASE TABLES
+## Base Tables
 
+### Person Table
+
+The core entity representing any individual in the system.
+
+```sql
 -- Person Table
 CREATE TABLE people.Person (
     PersonID UNIQUEIDENTIFIER NOT NULL,
@@ -53,7 +72,13 @@ GO
 -- Index on LastName, FirstName for name searches
 CREATE INDEX IX_Person_Name ON people.Person(LastName, FirstName);
 GO
+```
 
+### Dog Table
+
+Represents dogs housed at the shelter.
+
+```sql
 -- Dog Table
 CREATE TABLE shelter.Dog (
     DogID UNIQUEIDENTIFIER NOT NULL,
@@ -73,7 +98,13 @@ GO
 -- Index for looking up available dogs
 CREATE INDEX IX_Dog_Adoption ON shelter.Dog(IsAdopted);
 GO
+```
 
+### Medicine Table
+
+Tracks medications used at the shelter.
+
+```sql
 -- Medicine table
 CREATE TABLE medical.Medicine (
     MedicineID INT IDENTITY(1,1) NOT NULL,
@@ -84,7 +115,13 @@ CREATE TABLE medical.Medicine (
     CONSTRAINT PK_Medicine PRIMARY KEY (MedicineID)
 );
 GO
+```
 
+### Inventory Management Tables
+
+Tables for managing shelter supplies and items.
+
+```sql
 -- Item Catalog
 CREATE TABLE shelter.ItemCatalog (
     ItemID UNIQUEIDENTIFIER NOT NULL,
@@ -118,9 +155,15 @@ GO
 -- Index for finding items by catalog ID
 CREATE INDEX IX_Supply_ItemID ON shelter.Supply(ItemID);
 GO
+```
 
--- PERSON SUBTYPES
+## Person Subtypes
 
+Various roles a person can have in the system, implemented using single-table inheritance.
+
+### Veterinarian
+
+```sql
 -- Veterinarian table
 CREATE TABLE people.Veterinarian (
     VeterinarianID UNIQUEIDENTIFIER NOT NULL,
@@ -130,7 +173,11 @@ CREATE TABLE people.Veterinarian (
         ON DELETE CASCADE
 );
 GO
+```
 
+### Adopter
+
+```sql
 -- Adopter table
 CREATE TABLE people.Adopter (
     AdopterID UNIQUEIDENTIFIER NOT NULL,
@@ -144,7 +191,11 @@ CREATE TABLE people.Adopter (
     CONSTRAINT CK_Adopter_HomeStatus CHECK (HomeStatus IN ('Pending', 'Approved', 'Rejected'))
 );
 GO
+```
 
+### Pet Surrenderer
+
+```sql
 -- Pet Surrenderer table
 CREATE TABLE people.PetSurrenderer (
     SurrendererID UNIQUEIDENTIFIER NOT NULL,
@@ -154,7 +205,11 @@ CREATE TABLE people.PetSurrenderer (
         ON DELETE CASCADE
 );
 GO
+```
 
+### Pet Owner
+
+```sql
 -- Pet Owner table
 CREATE TABLE people.PetOwner (
     PetOwnerID UNIQUEIDENTIFIER NOT NULL,
@@ -171,7 +226,11 @@ CREATE TABLE people.PetOwner (
         ON DELETE NO ACTION
 );
 GO
+```
 
+### Volunteer
+
+```sql
 -- Volunteer table
 CREATE TABLE people.Volunteer (
     VolunteerID UNIQUEIDENTIFIER NOT NULL,
@@ -190,9 +249,15 @@ CREATE TABLE people.Volunteer (
          (EmergencyContactName IS NOT NULL AND EmergencyContactPhone IS NOT NULL))
 );
 GO
+```
 
--- Relationship tables
+## Relationship Tables
 
+### Dog Prescription
+
+Tracks medications prescribed to shelter dogs.
+
+```sql
 -- Dog Prescription table
 CREATE TABLE medical.DogPrescription (
     PrescriptionID INT IDENTITY(1, 1) NOT NULL,
@@ -221,7 +286,13 @@ GO
 CREATE UNIQUE INDEX UQ_DogPrescription_DogMedicine
     ON medical.DogPrescription(DogID, MedicineID, StartDate);
 GO
+```
 
+### Pet Owner's Pets
+
+Tracks pets owned by registered pet owners.
+
+```sql
 -- Pet Owner's Pets table
 CREATE TABLE people.PetOwnerPets (
     PetID INT IDENTITY(1,1) NOT NULL,
@@ -240,7 +311,15 @@ CREATE TABLE people.PetOwnerPets (
     CONSTRAINT CK_PetOwnerPets_Sex CHECK (Sex IN ('Male', 'Female', 'Intersex'))
 );
 GO
+```
 
+## Forms
+
+### Surrender Form
+
+Records information about surrendered pets.
+
+```sql
 -- Surrender Form table
 CREATE TABLE shelter.SurrenderForm (
     SurrenderFormID INT IDENTITY(1,1) NOT NULL,
@@ -288,7 +367,13 @@ CREATE TABLE shelter.SurrenderForm (
     CONSTRAINT CK_SurrenderForm_Status CHECK (Status IN ('Pending', 'Approved', 'Rejected', 'Completed'))
 );
 GO
+```
 
+### Adoption Form
+
+Tracks adoption applications.
+
+```sql
 -- Adoption Form
 CREATE TABLE shelter.AdoptionForm (
     AdoptionFormID INT IDENTITY(1,1) NOT NULL,
@@ -318,7 +403,13 @@ CREATE UNIQUE INDEX UQ_AdoptionForm_AdopterDog
     ON shelter.AdoptionForm(AdopterID, DogID)
     WHERE Status IN ('Pending', 'HomeVisitScheduled', 'Approved');
 GO
+```
 
+### Volunteer Form
+
+Tracks volunteer applications.
+
+```sql
 -- Volunteer Form table
 CREATE TABLE shelter.VolunteerForm (
     VolunteerFormID INT IDENTITY(1,1) NOT NULL,
@@ -349,7 +440,13 @@ CREATE TABLE shelter.VolunteerForm (
     CONSTRAINT CK_VolunteerForm_Status CHECK (Status IN ('Pending', 'Approved', 'Rejected', 'Completed'))
 );
 GO
+```
 
+### Volunteer Schedule
+
+Manages volunteer shifts and assignments.
+
+```sql
 -- Volunteer Schedule table
 CREATE TABLE people.VolunteerSchedule (
     ScheduleID INT IDENTITY(1,1) NOT NULL,
@@ -367,7 +464,15 @@ CREATE TABLE people.VolunteerSchedule (
     CONSTRAINT CK_VolunteerSchedule_Times CHECK (EndTime > StartTime)
 );
 GO
+```
 
+## Views
+
+### Available Dogs View
+
+Provides a filtered view of dogs available for adoption with age calculation.
+
+```sql
 -- Create a view for available dogs
 CREATE VIEW shelter.AvailableDogs AS
 SELECT
@@ -386,3 +491,4 @@ FROM
 WHERE
     d.IsAdopted = 0;
 GO
+```
