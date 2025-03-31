@@ -1,0 +1,18 @@
+CREATE DATABASE HumaneSociety;
+GO
+
+USE HumaneSociety;
+GO
+
+-- SCHEMAS
+CREATE SCHEMA shelter;
+GO
+
+CREATE SCHEMA medical;
+GO
+
+CREATE SCHEMA people;
+GO
+
+CREATE SCHEMA audit;
+GO
