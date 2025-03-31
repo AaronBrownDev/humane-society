@@ -1,24 +1,22 @@
 package main
 
 import (
-	"github.com/AaronBrownDev/HumaneSociety/internal/api"
-	"github.com/AaronBrownDev/HumaneSociety/internal/database"
+	"context"
 	"log"
+	"os"
+	"os/signal"
+
+	"github.com/AaronBrownDev/HumaneSociety/internal/cmd"
 )
 
 func main() {
-	// Initialize database
-	if err := database.InitializeDB(); err != nil {
-		log.Panicf("Error initializing database: %v", err)
-	}
-	defer database.CloseDB()
+	// Create a cancellable context
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
+	defer cancel()
 
-	// Get database
-	db := database.GetDB()
+	// Execute and get exit code
+	exitCode := cmd.Execute(ctx)
 
-	// Start server
-	server := api.NewServer(db)
-	if err := server.Run(); err != nil {
-		log.Panicf("Error starting server: %v", err)
-	}
+	log.Println("Application terminated")
+	os.Exit(exitCode)
 }
