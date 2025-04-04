@@ -1,5 +1,5 @@
-export default function  Volunteering(){
+export default function  Surrendering(){
     return(
-        <h1>The volunteer page</h1>
+        <h1>Surrending form </h1>
     )
 }

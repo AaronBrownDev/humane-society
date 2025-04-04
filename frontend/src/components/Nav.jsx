@@ -39,7 +39,7 @@ export default function Nav(){
             <nav className = "nav-bar">
                 <img src = "/src/assets/Humane-Society-logo2.png" alt= "Humane-Society-logo"/>
                 <ul className="nav-list" >
-                    <li><NavLink to= "../pages/Home"> Home</NavLink></li>
+                    <li><NavLink to= "/"> Home</NavLink></li>
                     <li><NavLink to= "/About"> About</NavLink></li>
                     <li><NavLink to= "/Adopt"> Adopt</NavLink></li>
                     <li><a href="https://www.paypal.com/donate/?cmd=_s-xclick&hosted_button_id=THJZGG93QJ3JS&ssrt=1742335653866"> Donate</a></li>

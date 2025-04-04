@@ -65,7 +65,7 @@
 
 }
 .headings a:hover{
-    background-color:rgb(85, 195, 238)
+    color:rgb(85, 195, 238)
 
 }
 
@@ -122,7 +122,14 @@
 .main-section8{
     text-align: center;
 }
+.main-section8 a{
+    text-decoration: none;
+    color: black;
+}
 
+.main-section8 a:hover{
+    color: rgb(109, 106, 106)
+}
  
 
 
