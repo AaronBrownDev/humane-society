@@ -15,13 +15,13 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
-          <Route path="../pages/About" element={<About />} />
-          <Route path="../pages/Adopt" element={<Adopt />} />
-          <Route path="../pages/Support" element={<Support />} />
-          <Route path="../pages/Volunteer" element={<Volunteer />} />
-          <Route path="../pages/Surrendering" element={<Surrendering />} />
-          <Route path="../pages/Sponsors" element={<Sponsors />} />
-          <Route path="../pages/Contact" element={<Contact />} />
+          <Route path="/About" element={<About />} />
+          <Route path="/Adopt" element={<Adopt />} />
+          <Route path="/Support" element={<Support />} />
+          <Route path="/Volunteer" element={<Volunteer />} />
+          <Route path="/Surrendering" element={<Surrendering />} />
+          <Route path="/Sponsors" element={<Sponsors />} />
+          <Route path="/Contact" element={<Contact />} />
         </Route>
       </Routes>
     </BrowserRouter>
