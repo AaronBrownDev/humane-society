@@ -1,6 +1,6 @@
 
-export function About(){
+export default function  About(){
     return(
-        <h1>The about page</h1>
+        <h1> About page</h1>
     )
 }
