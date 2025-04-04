@@ -12,7 +12,6 @@ import Nav from "../components/Nav.jsx";
 export default function Home(){
   return(
     <>
-      <Nav/>
       <div className="body">
         <Section1/>
         <Section2/>

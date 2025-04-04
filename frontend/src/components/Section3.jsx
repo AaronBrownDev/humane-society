@@ -1,7 +1,7 @@
 export default function Section2(){
     return(
         <main className = "main-section3">
-          <img src = "./src/assets/ccweb_orig.jpg" />
+          <img src = "/src/assets/ccweb_orig.jpg" />
           <header className ="headings3">
             <h3>The evening of Saturday, April 5 will come alive under the big top for Canine Carnival:
                 benefiting the medical needs of the dogs for the Humane Society of Northwest Louisiana. 
