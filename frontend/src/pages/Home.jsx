@@ -6,13 +6,12 @@ import Section5 from "../components/Section5.jsx";
 import Section6 from "../components/Section6.jsx";
 import Section7 from "../components/Section7.jsx";
 import Section8 from "../components/Section8.jsx";
+import Nav from "../components/Nav.jsx";
 
 
-
-const Home= ()=>{
+export default function Home(){
   return(
     <>
-      
       <div className="body">
         <Section1/>
         <Section2/>
@@ -26,6 +25,4 @@ const Home= ()=>{
       
     </>
   )
-};
-
-export default Home; 
+}
