@@ -34,7 +34,7 @@ export default function VolunteerForm(formData){
 	//console.log(data)
 
     return(
-        <form action={volunteerform}>
+        <form action={VolunteerForm}>
                 <label>Name *: <input type="text" name="first_name" required/> <input type="text" name="last_name" required/></label><br></br>
                 <label>Age *: <input type="number" name="age" required/></label><br></br>
                 <label>Email *: <input type="email" name="email" required/></label><br></br>
