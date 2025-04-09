@@ -31,6 +31,7 @@ type AdoptionFormRepository interface {
 	// Domain-specific operations
 	ApproveForm(ctx context.Context, formID int, volunteerID uuid.UUID) error
 	RejectForm(ctx context.Context, formID int, volunteerID uuid.UUID, reason string) error
+	CompleteForm(ctx context.Context, formID int, volunteerID uuid.UUID) error
 
 	// TODO: Considering implementing
 	// GetByAdopterID(ctx context.Context, adopterID uuid.UUID) ([]AdoptionForm, error)
