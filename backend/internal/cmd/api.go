@@ -13,11 +13,21 @@ import (
 )
 
 func APICmd(ctx context.Context) error {
+	// Ensure database exists
+	if err := database.EnsureDatabaseExists(); err != nil {
+		return fmt.Errorf("error ensuring database exists: %v", err)
+	}
+
 	// Initialize database
 	if err := database.InitializeDB(); err != nil {
 		return fmt.Errorf("error initializing database: %v", err)
 	}
 	defer database.CloseDB()
+
+	// Run migrations
+	if err := database.RunMigrations(); err != nil {
+		return fmt.Errorf("error running migrations: %v", err)
+	}
 
 	// Get database
 	db := database.GetDB()
