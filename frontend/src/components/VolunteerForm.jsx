@@ -1,35 +1,5 @@
 export default function VolunteerForm(formData){
 	
-	/**const firstName = formData.get("first_name")
-	const lastName = formData.get("last_name")
-	const email = formData.get("email")
-	const address =  formData.get("address")
-	const phoneNumber = formData.get("phone")
-	
-	const currentAnimals = formData.get("current_animals")
-	const animalNames = formData.get("animal_names")
-	const numOfAnimales = formData.get("animal_count")
-	const breed = formData.get("animal_type")
-	
-	const vetPersonName  = formData.get("veterinarian_name")
-	const vetPersonNumber= formData.get("veterinarian_number")
-	const clientName = formData.get("vet_client_name)
-	const vetConsent = formData.get("vet_authorization")//should we have this becuase it is not in the database
-	
-	const supportAnimalWelfare= formData.get("promote_spay_neuter")
-	const supportResponsibleBreeding = formData.get("believe_breeding")
-	const cleaning = formData.get("cleaning_kennels")
-	const brushPlay = formData.get("brush_play_dogs")
-	const allergies = formData.get("allergic_dogs")
-	const physicalLimitations = formData.get("limitations")
-	const isForCommunity_service = formData.get("community_service")
-	const yesCommunityService = formData.get("community_service_reason")
-	const hoursCommunityService = formData.get("community_service_hours")
-	const referralSource = formData.get("referral_source")
-	const commentAndQuestions = formData.get("additional_comments")
-	const volunteershifts = formData.get("volunteer_shifts")
-	*/
-	
 	function handleSubmit(formData){
 		const data = Object.fromEntries(formData)
 		console.log(data)

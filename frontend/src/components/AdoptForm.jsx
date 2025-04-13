@@ -1,5 +1,24 @@
+import React from "react"
 export default function adoptionForm(){
+	const [pets, setPets] = React.useState([{}])
+
+	const handlePetChange = (index, event) => {
+		const newPets = [...pets]
+		newPets[index][event.target.name] = event.target.value
+		setPets(newPets)
+	}
 	
+	const handleAddPet = () => {
+		setPets([...pets, {}])
+	}
+
+	const handleRemovePet = (index) => {
+		const newPets = [...pets]
+		newPets.splice(index, 1)
+		setPets(newPets)
+	}
+
+
 	
 	function handleSubmit(formData){
 		const data = Object.fromEntries(formData)
@@ -71,7 +90,7 @@ export default function adoptionForm(){
 						<br></br>
 						
 						
-						// Try the email component thing 
+						/**Try the email component thing */  
 						<h1> Information on Pet 1</h1>
 						<label >Name of Pet<input type="text" name="pet1_name"/></label><br></br>
 						
