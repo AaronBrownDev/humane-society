@@ -1,6 +1,3 @@
-CREATE DATABASE HumaneSociety;
-GO
-
 USE HumaneSociety;
 GO
 

@@ -1,5 +1,0 @@
-USE master;
-GO
-
-DROP DATABASE IF EXISTS HumaneSociety;
-GO
