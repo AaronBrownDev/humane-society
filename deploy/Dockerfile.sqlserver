@@ -1,8 +1,0 @@
-FROM mcr.microsoft.com/mssql/server:2022-latest
-
-COPY ./sql-init/run-initialization.sh /usr/local/bin/
-COPY ./sql-init/init-db.sql /docker-entrypoint-initdb.d/
-
-RUN chmod +x /usr/local/bin/run-initialization.sh
-
-CMD /bin/bash -c "/opt/mssql/bin/sqlservr & /usr/local/bin/run-initialization.sh & wait"
