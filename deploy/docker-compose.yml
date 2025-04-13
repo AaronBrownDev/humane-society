@@ -1,6 +1,8 @@
 services:
   db:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.sqlserver
     environment:
       - ACCEPT_EULA=Y
       - SA_PASSWORD=${SQL_PASSWORD:-YourStrongPassword123!}
