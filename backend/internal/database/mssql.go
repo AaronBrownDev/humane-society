@@ -3,8 +3,8 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	_ "github.com/denisenkom/go-mssqldb"
 	"github.com/joho/godotenv"
+	_ "github.com/microsoft/go-mssqldb"
 	"log"
 	"os"
 	"strconv"
