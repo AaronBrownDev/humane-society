@@ -3,13 +3,12 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"github.com/joho/godotenv"
+	_ "github.com/microsoft/go-mssqldb"
 	"log"
 	"os"
 	"strconv"
 	"time"
-
-	"github.com/joho/godotenv"
-	_ "github.com/microsoft/go-mssqldb"
 )
 
 var db *sql.DB
