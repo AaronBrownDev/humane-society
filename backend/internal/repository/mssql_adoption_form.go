@@ -2,17 +2,13 @@ package repository
 
 import (
 	"context"
+
 	"github.com/AaronBrownDev/HumaneSociety/internal/domain"
 	"github.com/google/uuid"
 )
 
 type mssqlAdoptionFormRepository struct {
 	conn Connection
-}
-
-func (m mssqlAdoptionFormRepository) CompleteForm(ctx context.Context, formID int, volunteerID uuid.UUID) error {
-	//TODO implement me
-	panic("implement me")
 }
 
 func NewMSSQLAdoptionForm(conn Connection) domain.AdoptionFormRepository {
