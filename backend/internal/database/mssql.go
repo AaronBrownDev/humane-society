@@ -3,12 +3,13 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"github.com/joho/godotenv"
-	_ "github.com/microsoft/go-mssqldb"
 	"log"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/joho/godotenv"
+	_ "github.com/microsoft/go-mssqldb"
 )
 
 var db *sql.DB
@@ -62,7 +63,7 @@ func getConnectionString() string {
 	password := os.Getenv("DB_PASSWORD")
 	databaseName := os.Getenv("DB_NAME")
 
-	return fmt.Sprintf("server=%s;port=%s;user id=%s;password=%s;database=%s;trustservercertificate=true", host, port, user, password, databaseName)
+	return fmt.Sprintf("server=%s;port=%s;user id=%s;password=%s;database=%s;encrypt=true", host, port, user, password, databaseName)
 }
 
 func configureConnectionPool() {
