@@ -1,11 +1,15 @@
 export default function surrenderform(){
-	//const data = Object.fromEntries(formData)
-	//console.log(data)
-
+	
+    function handleSubmit(formData){
+		const data = Object.fromEntries(formData)
+		console.log(data)
+	}
+	
+    
 
     return (
         
-        <form  action={surrenderform}>
+        <form  action={handleSubmit}>
             <label>Date *: <input type="date" name="date" required/></label><br></br>
             <label>Name *: <input type="text" name="first_name" required/> <input type="text" name="last_name" required/></label><br></br>
             <label>Address *: <input type="textarea" name="address" required/></label><br></br>

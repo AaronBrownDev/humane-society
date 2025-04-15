@@ -1,31 +1,14 @@
+export default function adoptionForm(){
+	
+	
+	function handleSubmit(formData){
+		const data = Object.fromEntries(formData)
+		console.log(data)
+	}
 
-export default function adoptionForm(formData){
-	
-	/*const firstName = formData.get("first_name")
-	const lastName = formData.get("last_name")
-	const number = formData.get ("adopter_number")
-	const age = formData.get ("adopter_age")
-	const email = formData.get ("adopter_email")
-	const physicalAddress = formData.get ("physical_address")
-	const mailingAddress = formData.get ("mailing_address")
-	const houseDistance = formData.get ("house_distance")
-	const adoptersAllergies = formData.get ("allergies")
-	const yesAdopterAllergies = formData.get ("allergies_yes")
-	const previousAdoption = formData.get("prev_adoption")
-	const interestedDog = formData.get("interested_Dog")
-	const firstAdoption = formData.get ("first_adopt")
-	const prevsurrender= formData.get ("prev_surrender")
-	const yesSurrender = formData.get("yes_surrender")
-	
-	const data = Object.fromEntries(formData)
-	console.log(data)
-	
-	*/
-	
-	
 	return (
 
-		<form action={adoptionForm}>
+		<form action= {handleSubmit}className="adoption-form">
 						<label>Date <input type= "date" id="date" name="date" required/></label><br></br>
 						
 						<label>First Name<input type="text" id= "firstName" name="first_name" required/> </label><br></br>
@@ -382,50 +365,53 @@ export default function adoptionForm(formData){
 							Outside
 						</label>
 						<br></br>
-						<label>Where will the dogs sleep at night
+						<label>Where will the dogs sleep at night?<br></br>
 							<input type="radio" name="where_will_sleep" value=" Inside" required/>
 							Inside
 						</label>
+						<br></br>
 						<label>
 							<input type="radio" name="where_will_sleep" value=" Outside"/>
 							Outside
 						</label>
-						
+						<br></br>
 						<label> What are your thoughts on a dog living outdoors?<input type="textarea" name="thoughts_on_inside_outside"/></label>
-						
+						<br></br>
 						
 						<label> Where do dogs get heartworm disease from? <input type="textarea"/></label>
-						
-						<label> Are your dogs current on heartworm prevention?
+						<br></br>
+						<label> Are your dogs current on heartworm prevention?<br></br>
 							<input type="radio"   name="heartworm_prevention" required/>
 							Yes
 						</label>
-						
+						<br></br>
 						<label>
 							<input type="radio" name="heartworm_prevention"/>
 							No
 						</label>
-						
+						<br></br>
 						<label>
 							<input type="radio" name="heartworm_prevention"/>
 							N/A
 						</label>
+						<br></br>
 						
+						<label> 
+							Is there anything else you would like us to know about your home? <br></br>
+							<input type="textarea"/>
+						</label>
 						
-						<label> Is there anything else you would like us to know about your home? 
-						<input type="textarea"/></label>
-						
-						
-						<label> Are you active military?
+						<br></br>
+						<label> Are you active military?<br></br>
 							<input type="radio" name="active_duty" required/>
 							Yes
 						</label>
-						
+						<br></br>
 						<label>
 							<input type="radio" name="active_duty"/>
 							No
 						</label>
-						
+						<br></br>
 						
 						<label> If active duty, is there a chance of deployment? 
 							<input type="radio"  name="chance_of_deployment"/>
@@ -438,34 +424,35 @@ export default function adoptionForm(formData){
 						</label>
 						<br></br>
 						
-						<label>If you are active duty military and deploy, where will your pets go? <input type="text"/> </label>
+						<label>If you are active duty military and deploy, where will your pets go? <br></br><input type="text"/> </label>
 						<br></br>
 						
 						<label>
 							INCOMPLETE APPLICATIONS WITH MISSING INFORMATION WILL 
 							BE RETURNED AS INCOMPLETE AND NOT PROCESSED. PLEASE MAKE SURE 
 							ALL FIELDS ARE ACCURATELY FILLED OUT AND YOUR VETERINARIAN HAS 
-							BEEN CONTACTED TO RELEASE RECORDS. 
+							BEEN CONTACTED TO RELEASE RECORDS. <br></br>
 							<input type= "checkbox" required/>
 							Yes I, agree 
 						</label>
 						<br></br>
-						
+						<br></br>
 						<label>
 						I UNDERSTAND AND AM PREPARED FOR THE FINANCIAL RESPONSIBILITY
 						OF OWNING A PET INCLUDING, BUT NOT LIMITED TO ANNUAL VACCINATIONS, AND 
-						HEARTWORM PREVENTION. 
+						HEARTWORM PREVENTION. <br></br>
 						<input type= "checkbox" required/>
 						Yes I, agree 
 						</label>
 						<br></br>
-						
+						<br></br>
 						<label>PLEASE NOTE THAT IF YOU SHOULD BECOME UNABLE TO CARE FOR THIS ANIMAL,
 						IT MUST BE RETURNED TO THE HSNWLA. IT CAN NOT BE GIVEN AWAY TO ANYONE. 
-						(Initial Below) 
+						(Initial Below) <br></br>
 						<input type= "checkbox" required/>
 						Yes I, agree 
 						</label>
+						<br></br>
 						<br></br>
 						
 						<label> Signature</label>

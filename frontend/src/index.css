@@ -4,8 +4,15 @@
 
 .nav-bar{
     display: flex;
+    max-width: fit-content;
 }
 
+.nav-bar img{
+    max-width: 300px;
+    height: 50px;
+    padding: 20px;
+   
+}
 .nav-bar a {
     text-decoration: none;
     color: black;
@@ -24,9 +31,9 @@
 .nav-bar a:hover {
     background-color: rgb(109, 106, 106);
 }
-
-
-
+.nav-bar ul{
+    max-width: 100%;
+}
 
 .main-section1 img {
     padding-block: 0%;
@@ -133,5 +140,4 @@
     color: rgb(109, 106, 106)
 }
  
-
 
