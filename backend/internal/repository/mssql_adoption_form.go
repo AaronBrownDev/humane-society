@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-
 	"github.com/AaronBrownDev/HumaneSociety/internal/domain"
 	"github.com/google/uuid"
 )
