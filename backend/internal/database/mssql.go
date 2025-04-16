@@ -62,7 +62,9 @@ func getConnectionString() string {
 	password := os.Getenv("DB_PASSWORD")
 	databaseName := os.Getenv("DB_NAME")
 
-	return fmt.Sprintf("server=%s;port=%s;user id=%s;password=%s;database=%s;encrypt=true", host, port, user, password, databaseName)
+	// only for dev env
+	// TODO fix for production env
+	return fmt.Sprintf("server=%s;port=%s;user id=%s;password=%s;database=%s;encrypt=true;TrustServerCertificate=true", host, port, user, password, databaseName)
 }
 
 func configureConnectionPool() {
