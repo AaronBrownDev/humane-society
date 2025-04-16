@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS UQ_DogPrescription_DogMedicine ON medical.DogPrescription;

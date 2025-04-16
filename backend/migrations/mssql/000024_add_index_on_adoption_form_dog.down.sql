@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS UQ_AdoptionForm_AdopterDog ON shelter.AdoptionForm;

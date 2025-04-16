@@ -1,0 +1,1 @@
+CREATE INDEX IX_Supply_ItemID ON shelter.Supply(ItemID);

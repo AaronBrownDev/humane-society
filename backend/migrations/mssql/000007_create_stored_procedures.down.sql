@@ -1,9 +1,0 @@
-USE HumaneSociety;
-GO
-
-DROP PROCEDURE IF EXISTS InsertVolunteer;
-DROP PROCEDURE IF EXISTS InsertAdopter;
-DROP PROCEDURE IF EXISTS InsertPetOwner;
-DROP PROCEDURE IF EXISTS InsertVeterinarian;
-DROP PROCEDURE IF EXISTS InsertPerson;
-GO

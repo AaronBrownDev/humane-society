@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS IX_Supply_ItemID ON shelter.Supply;

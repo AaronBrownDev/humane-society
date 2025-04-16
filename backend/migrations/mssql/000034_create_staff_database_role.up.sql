@@ -1,0 +1,1 @@
+CREATE ROLE HumaneSociety_Staff;

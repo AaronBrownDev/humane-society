@@ -1,0 +1,1 @@
+CREATE INDEX IX_Dog_Adoption ON shelter.Dog(IsAdopted);
