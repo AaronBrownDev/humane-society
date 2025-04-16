@@ -8,10 +8,10 @@
 }
 
 .nav-bar img{
-    max-width: 300px;
+    max-width: 500px;
     height: 50px;
     padding: 20px;
-   
+
 }
 .nav-bar a {
     text-decoration: none;
@@ -42,12 +42,11 @@
 }
 
 
-
 .main-section2{
     display: flex;
     padding: 50px;
     background-color:  rgb(0, 140, 255);
-    max-width: 250 px;
+    max-width: 250px;
 }
 .main-section2 img{
     width: 500px;
@@ -139,5 +138,19 @@
 .main-section8 a:hover{
     color: rgb(109, 106, 106)
 }
- 
 
+
+
+
+form{
+    padding: 20px;
+    margin-left: 20px;
+    justify-content: center;
+}
+label, input {
+    display: block;
+}
+
+label {
+    margin-bottom: 5px;
+}
