@@ -1,0 +1,2 @@
+ALTER TABLE people.Person
+ALTER COLUMN EmailAddress VARCHAR(100) NULL;

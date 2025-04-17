@@ -1,0 +1,7 @@
+CREATE TABLE auth.Role (
+    RoleID INT IDENTITY(1,1) NOT NULL,
+    Name NVARCHAR(50) NOT NULL,
+    Description NVARCHAR(200) NULL,
+    CONSTRAINT PK_Role PRIMARY KEY (RoleID),
+    CONSTRAINT UK_Role_Name UNIQUE (Name)
+);

@@ -1,0 +1,2 @@
+ALTER TABLE people.Person
+ALTER COLUMN BirthDate DATE NOT NULL;
