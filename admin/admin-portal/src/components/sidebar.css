@@ -1,0 +1,32 @@
+.mainSidebarContainer {
+    flex: 0.8;
+    background-color: yellow;
+    height: 100vh;
+}
+
+.ulContainer{
+    margin-top: 30px;
+}
+.liContainer {
+    display: flex;
+    align-items: center;
+    margin-top:-7px;
+}
+
+.menu{
+    display: flex;
+    color: cornflowerblue;
+
+}
+.adminContainer{
+    display: flex;
+    margin-top: -10px;
+}
+
+
+
+.itemNames{
+    color: #5f6268;
+    margin-left: 10px;
+
+}
