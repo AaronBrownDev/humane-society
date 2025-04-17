@@ -1,0 +1,12 @@
+CREATE TABLE auth.UserRole (
+    UserID UNIQUEIDENTIFIER NOT NULL,
+    RoleID INT NOT NULL,
+    AssignedAt DATETIME2(0) NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT PK_UserRole PRIMARY KEY (UserID, RoleID),
+    CONSTRAINT FK_UserRole_User FOREIGN KEY (UserID)
+        REFERENCES auth.UserAccount(UserID)
+        ON DELETE CASCADE,
+    CONSTRAINT FK_UserRole_Role FOREIGN KEY (RoleID)
+        REFERENCES auth.Role(RoleID)
+        ON DELETE CASCADE
+);
