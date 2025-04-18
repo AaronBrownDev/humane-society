@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"github.com/google/uuid"
 	"time"
 )
@@ -8,7 +9,6 @@ import (
 // UserAccount represents a user account for authentication
 type UserAccount struct {
 	UserID              uuid.UUID `json:"userId"`
-	Email               string    `json:"email"`
 	PasswordHash        string    `json:"-"` // Never expose in JSON responses
 	LastLogin           time.Time `json:"lastLogin"`
 	IsActive            bool      `json:"isActive"`
@@ -16,9 +16,12 @@ type UserAccount struct {
 	IsLocked            bool      `json:"isLocked"`
 	LockoutEnd          time.Time `json:"lockoutEnd"`
 	CreatedAt           time.Time `json:"createdAt"`
-	PersonID            uuid.UUID `json:"personId,omitempty"`
-	Roles               []Role    `json:"roles,omitempty"`
 }
 
 type UserAccountRepository interface {
+	GetAll(ctx context.Context) ([]UserAccount, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*UserAccount, error)
+	Create(ctx context.Context, userAccount UserAccount) (UserAccount, error)
+	Update(ctx context.Context, userAccount UserAccount) (UserAccount, error)
+	Delete(ctx context.Context, id uuid.UUID) error
 }
