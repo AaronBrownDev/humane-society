@@ -13,16 +13,10 @@ GO
 
 -- SCHEMAS
 CREATE SCHEMA shelter;
-GO
-
 CREATE SCHEMA medical;
-GO
-
 CREATE SCHEMA people;
-GO
-
 CREATE SCHEMA audit;
-GO
+CREATE SCHEMA auth;
 ```
 
 ## Audit System
@@ -45,7 +39,6 @@ CREATE TABLE audit.ChangeLog (
     CONSTRAINT PK_ChangeLog PRIMARY KEY (LogID),
     CONSTRAINT CK_ChangeLog_AuditActionType CHECK (AuditActionType IN ('I', 'U', 'D'))
 );
-GO
 ```
 
 ## Base Tables
@@ -60,18 +53,16 @@ CREATE TABLE people.Person (
     PersonID UNIQUEIDENTIFIER NOT NULL,
     FirstName NVARCHAR(50) NOT NULL,
     LastName NVARCHAR(50) NOT NULL,
-    BirthDate DATE NOT NULL,
+    BirthDate DATE NULL, -- Made nullable in migration 45
     PhysicalAddress NVARCHAR(150) NOT NULL,
     MailingAddress NVARCHAR(150) NOT NULL,
-    EmailAddress VARCHAR(100) NULL,
+    EmailAddress VARCHAR(100) NOT NULL, -- Made non-nullable in migration 46
     PhoneNumber VARCHAR(20) NULL,
     CONSTRAINT PK_Person PRIMARY KEY (PersonID)
 );
-GO
 
 -- Index on LastName, FirstName for name searches
 CREATE INDEX IX_Person_Name ON people.Person(LastName, FirstName);
-GO
 ```
 
 ### Dog Table
@@ -93,11 +84,9 @@ CREATE TABLE shelter.Dog (
     CONSTRAINT PK_Dog PRIMARY KEY (DogID),
     CONSTRAINT CK_Dog_Sex CHECK (Sex IN ('Male', 'Female', 'Intersex'))
 );
-GO
 
 -- Index for looking up available dogs
 CREATE INDEX IX_Dog_Adoption ON shelter.Dog(IsAdopted);
-GO
 ```
 
 ### Medicine Table
@@ -114,7 +103,6 @@ CREATE TABLE medical.Medicine (
     DosageUnit NVARCHAR(20) NULL,
     CONSTRAINT PK_Medicine PRIMARY KEY (MedicineID)
 );
-GO
 ```
 
 ### Inventory Management Tables
@@ -133,7 +121,6 @@ CREATE TABLE shelter.ItemCatalog (
     CONSTRAINT PK_ItemCatalog PRIMARY KEY (ItemID),
     CONSTRAINT UK_ItemCatalog_Name UNIQUE (Name)
 );
-GO
 
 -- Supply inventory
 CREATE TABLE shelter.Supply (
@@ -150,11 +137,9 @@ CREATE TABLE shelter.Supply (
         ON DELETE CASCADE,
     CONSTRAINT CK_Supply_Quantity CHECK (Quantity >= 0)
 );
-GO
 
 -- Index for finding items by catalog ID
 CREATE INDEX IX_Supply_ItemID ON shelter.Supply(ItemID);
-GO
 ```
 
 ## Person Subtypes
@@ -172,7 +157,6 @@ CREATE TABLE people.Veterinarian (
         REFERENCES people.Person(PersonID)
         ON DELETE CASCADE
 );
-GO
 ```
 
 ### Adopter
@@ -190,7 +174,6 @@ CREATE TABLE people.Adopter (
         ON DELETE CASCADE,
     CONSTRAINT CK_Adopter_HomeStatus CHECK (HomeStatus IN ('Pending', 'Approved', 'Rejected'))
 );
-GO
 ```
 
 ### Pet Surrenderer
@@ -204,7 +187,6 @@ CREATE TABLE people.PetSurrenderer (
         REFERENCES people.Person(PersonID)
         ON DELETE CASCADE
 );
-GO
 ```
 
 ### Pet Owner
@@ -225,7 +207,6 @@ CREATE TABLE people.PetOwner (
         REFERENCES people.Veterinarian(VeterinarianID)
         ON DELETE NO ACTION
 );
-GO
 ```
 
 ### Volunteer
@@ -248,7 +229,6 @@ CREATE TABLE people.Volunteer (
         ((EmergencyContactName IS NULL AND EmergencyContactPhone IS NULL) OR
          (EmergencyContactName IS NOT NULL AND EmergencyContactPhone IS NOT NULL))
 );
-GO
 ```
 
 ## Relationship Tables
@@ -280,12 +260,10 @@ CREATE TABLE medical.DogPrescription (
         REFERENCES people.Veterinarian(VeterinarianID)
         ON DELETE NO ACTION
 );
-GO
 
 -- Create unique constraint for dog and medicine combination
 CREATE UNIQUE INDEX UQ_DogPrescription_DogMedicine
     ON medical.DogPrescription(DogID, MedicineID, StartDate);
-GO
 ```
 
 ### Pet Owner's Pets
@@ -310,7 +288,6 @@ CREATE TABLE people.PetOwnerPets (
     CONSTRAINT CK_PetOwnerPets_LivingEnvironment CHECK (LivingEnvironment IN ('Indoor', 'Outdoor', 'Both')),
     CONSTRAINT CK_PetOwnerPets_Sex CHECK (Sex IN ('Male', 'Female', 'Intersex'))
 );
-GO
 ```
 
 ## Forms
@@ -366,7 +343,6 @@ CREATE TABLE shelter.SurrenderForm (
     CONSTRAINT CK_SurrenderForm_LivingEnvironment CHECK (LivingEnvironment IN ('Indoor', 'Outdoor', 'Both')),
     CONSTRAINT CK_SurrenderForm_Status CHECK (Status IN ('Pending', 'Approved', 'Rejected', 'Completed'))
 );
-GO
 ```
 
 ### Adoption Form
@@ -396,13 +372,11 @@ CREATE TABLE shelter.AdoptionForm (
         ON DELETE NO ACTION,
     CONSTRAINT CK_AdoptionForm_Status CHECK (Status IN ('Pending', 'HomeVisitScheduled', 'Approved', 'Rejected', 'Completed'))
 );
-GO
 
 -- Create unique constraint on adopter and dog
 CREATE UNIQUE INDEX UQ_AdoptionForm_AdopterDog
     ON shelter.AdoptionForm(AdopterID, DogID)
     WHERE Status IN ('Pending', 'HomeVisitScheduled', 'Approved');
-GO
 ```
 
 ### Volunteer Form
@@ -439,7 +413,6 @@ CREATE TABLE shelter.VolunteerForm (
         ON DELETE NO ACTION,
     CONSTRAINT CK_VolunteerForm_Status CHECK (Status IN ('Pending', 'Approved', 'Rejected', 'Completed'))
 );
-GO
 ```
 
 ### Volunteer Schedule
@@ -463,7 +436,90 @@ CREATE TABLE people.VolunteerSchedule (
     CONSTRAINT CK_VolunteerSchedule_Status CHECK (Status IN ('Scheduled', 'Completed', 'Cancelled', 'NoShow')),
     CONSTRAINT CK_VolunteerSchedule_Times CHECK (EndTime > StartTime)
 );
-GO
+```
+
+## Authentication System
+
+Tables for user authentication and authorization.
+
+### User Account
+
+Stores user credentials and account status.
+
+```sql
+-- User Account table
+CREATE TABLE auth.UserAccount (
+    UserID UNIQUEIDENTIFIER NOT NULL,
+    PasswordHash NVARCHAR(255) NOT NULL,
+    LastLogin DATETIME2(0) NULL,
+    IsActive BIT NOT NULL DEFAULT 1,
+    FailedLoginAttempts INT NOT NULL DEFAULT 0,
+    IsLocked BIT NOT NULL DEFAULT 0,
+    LockoutEnd DATETIME2(0) NULL,
+    CreatedAt DATETIME2(0) NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT PK_UserAccount PRIMARY KEY (UserID),
+    CONSTRAINT FK_UserAccount_Person FOREIGN KEY (UserID)
+        REFERENCES people.Person(PersonID)
+        ON DELETE CASCADE
+);
+```
+
+### Role
+
+Defines roles that can be assigned to users.
+
+```sql
+-- Role table
+CREATE TABLE auth.Role (
+    RoleID INT IDENTITY(1,1) NOT NULL,
+    Name NVARCHAR(50) NOT NULL,
+    Description NVARCHAR(200) NULL,
+    CONSTRAINT PK_Role PRIMARY KEY (RoleID),
+    CONSTRAINT UK_Role_Name UNIQUE (Name)
+);
+```
+
+### User Role
+
+Associates users with one or more roles.
+
+```sql
+-- User Role table
+CREATE TABLE auth.UserRole (
+    UserID UNIQUEIDENTIFIER NOT NULL,
+    RoleID INT NOT NULL,
+    AssignedAt DATETIME2(0) NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT PK_UserRole PRIMARY KEY (UserID, RoleID),
+    CONSTRAINT FK_UserRole_User FOREIGN KEY (UserID)
+        REFERENCES auth.UserAccount(UserID)
+        ON DELETE CASCADE,
+    CONSTRAINT FK_UserRole_Role FOREIGN KEY (RoleID)
+        REFERENCES auth.Role(RoleID)
+        ON DELETE CASCADE
+);
+```
+
+### Refresh Token
+
+Manages refresh tokens for long‑lived sessions.
+
+```sql
+-- Refresh Token table
+CREATE TABLE auth.RefreshToken (
+    TokenID UNIQUEIDENTIFIER NOT NULL,
+    UserID UNIQUEIDENTIFIER NOT NULL,
+    Token NVARCHAR(255) NOT NULL,
+    Expires DATETIME2(0) NOT NULL,
+    CreatedAt DATETIME2(0) NOT NULL DEFAULT GETDATE(),
+    RevokedAt DATETIME2(0) NULL,
+    ReplacedByTokenID UNIQUEIDENTIFIER NULL,
+    CONSTRAINT PK_RefreshToken PRIMARY KEY (TokenID),
+    CONSTRAINT FK_RefreshToken_User FOREIGN KEY (UserID)
+        REFERENCES auth.UserAccount(UserID)
+        ON DELETE CASCADE,
+    CONSTRAINT FK_RefreshToken_ReplacedBy FOREIGN KEY (ReplacedByTokenID)
+        REFERENCES auth.RefreshToken(TokenID)
+);
 ```
 
 ## Views
@@ -490,5 +546,4 @@ FROM
     shelter.Dog AS d
 WHERE
     d.IsAdopted = 0;
-GO
 ```
