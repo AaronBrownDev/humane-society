@@ -1,7 +1,15 @@
+import React from "react";
+
 export default function VolunteerForm(){
-	
+    const [inputs, setInputs]= React.useState([]);
 
+    const handleChange = (event)=>{
+        const name = event.target.name;
+        const inputValue = event.target.value;
+        setInputs(prevState => ({...prevState, [name]: inputValue}));
+    }
 
+    //Enter API call
 	function handleSubmit(formData){
 		const data = Object.fromEntries(formData)
 		console.log(data)
@@ -75,7 +83,7 @@ export default function VolunteerForm(){
                 <label>If Yes, Please Explain Why Needed: <input type="text" name="community_service_reason"/></label>
                 <label>If Yes, How Many Hours Are Needed and By When?: <input type="text" name="community_service_hours"/></label>
                 <label>How Did You Hear About the HSNWLA? *: <input type="text" name="referral_source" required/></label>
-                <label>Any Other Questions or Comments?: <textarea name="additional_comments"></textarea></label>
+                <label>Any Other Questions or Comments?: <input name="additional_comments"></input></label>
                 <label>Available Volunteer Shifts: <input type="text" name="volunteer_shifts"/></label>
                 
                 <button type="submit">Submit</button>

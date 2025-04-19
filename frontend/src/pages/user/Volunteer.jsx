@@ -1,6 +1,6 @@
 
-import Section4 from "../components/Section4.jsx";
-import VolunteerForm from "../components/VolunteerForm";
+import Section4 from "../../components/public/sections/Section4.jsx";
+import VolunteerForm from "../../components/forms/VolunteerForm.jsx";
 
 
 export default function Volunteer(){
