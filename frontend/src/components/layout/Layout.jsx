@@ -1,6 +1,6 @@
 import Navbar from "./Navbar.jsx"
 import { Outlet } from "react-router-dom"
-import Section8 from "../sections/Section8.jsx";
+import Section8 from "../public/sections/Section8.jsx";
 
 export default function Layout() {
     return (

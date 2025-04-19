@@ -1,4 +1,4 @@
-import SurrenderForm from '../components/forms/SurrenderForm.jsx';
+import SurrenderForm from '../../components/forms/SurrenderForm.jsx';
 export default function  Surrendering(){
     return(
         <>

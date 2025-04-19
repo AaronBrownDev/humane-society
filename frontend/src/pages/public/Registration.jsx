@@ -1,5 +1,5 @@
 import React, {useState} from 'react'
-import "../styles/Registration.css"
+import "../../styles/Registration.css"
 import {NavLink} from "react-router-dom";
 
 export default function Registration() {
