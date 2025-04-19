@@ -1,10 +1,10 @@
-import Section1 from "../components/Section1.jsx";
-import Section2 from "../components/Section2.jsx";
-import Section3 from "../components/Section3.jsx";
-import Section4 from "../components/Section4.jsx";
-import Section5 from "../components/Section5.jsx";
-import Section6 from "../components/Section6.jsx";
-import Section7 from "../components/Section7.jsx";
+import Section1 from "../components/sections/Section1.jsx";
+import Section2 from "../components/sections/Section2.jsx";
+import Section3 from "../components/sections/Section3.jsx";
+import Section4 from "../components/sections/Section4.jsx";
+import Section5 from "../components/sections/Section5.jsx";
+import Section6 from "../components/sections/Section6.jsx";
+import Section7 from "../components/sections/Section7.jsx";
 
 
 

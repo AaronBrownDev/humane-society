@@ -1,5 +1,5 @@
 
-import AdoptForm from "../components/AdoptForm" // Assuming you have an AdoptionForm component
+import AdoptForm from "../components/forms/AdoptForm.jsx" // Assuming you have an AdoptionForm component
 
 export default function Adopt (){
 return (

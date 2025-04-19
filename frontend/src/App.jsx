@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Layout from './components/Layout.jsx';
+import Layout from './components/layout/Layout.jsx';
 import Home from './pages/Home.jsx';
 import About from './pages/About.jsx';
 import Adopt from './pages/Adopt.jsx';
