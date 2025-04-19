@@ -8,6 +8,8 @@ import Surrendering from './pages/Surrendering.jsx';
 import Support from './pages/Support.jsx';
 import Sponsors from './pages/Sponsors.jsx';
 import Contact from './pages/Contact.jsx';
+import LoginPage from "./pages/LoginPage.jsx";
+import Registration from './pages/Registration.jsx';
 
 export default function App() {
   return (
@@ -22,6 +24,8 @@ export default function App() {
           <Route path="/Surrendering" element={<Surrendering />} />
           <Route path="/Sponsors" element={<Sponsors />} />
           <Route path="/Contact" element={<Contact />} />
+          <Route path="LoginPage" element = {<LoginPage/>}/>
+          <Route path="Registration" element={<Registration />} />
         </Route>
       </Routes>
     </BrowserRouter>
