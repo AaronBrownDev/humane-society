@@ -22,6 +22,7 @@ type Person struct {
 type PersonRepository interface {
 	GetAll(ctx context.Context) ([]Person, error)
 	GetByID(ctx context.Context, personID uuid.UUID) (*Person, error)
+	GetByEmail(ctx context.Context, emailAddress string) (*Person, error)
 	Create(ctx context.Context, person *Person) error
 	Update(ctx context.Context, person *Person) error
 	Delete(ctx context.Context, personID uuid.UUID) error

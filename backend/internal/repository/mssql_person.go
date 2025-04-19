@@ -76,7 +76,36 @@ func (r *mssqlPersonRepository) GetByID(ctx context.Context, personID uuid.UUID)
 		&person.EmailAddress,
 		&person.PhoneNumber,
 	)
+	if err != nil {
+		if errors.Is(err, errors.New("sql: no rows in result set")) {
+			return nil, domain.ErrNotFound
+		}
+		return nil, err
+	}
 
+	return &person, nil
+}
+
+func (r *mssqlPersonRepository) GetByEmail(ctx context.Context, email string) (*domain.Person, error) {
+	query := `SELECT PersonID, FirstName, LastName, BirthDate, PhysicalAddress, MailingAddress, EmailAddress, PhoneNumber 
+              FROM people.Person 
+              WHERE EmailAddress = @p1`
+
+	if email == "" {
+		return nil, domain.ErrInvalidInput
+	}
+
+	var person domain.Person
+	err := r.conn.QueryRowContext(ctx, query, email).Scan(
+		&person.PersonID,
+		&person.FirstName,
+		&person.LastName,
+		&person.BirthDate,
+		&person.PhysicalAddress,
+		&person.MailingAddress,
+		&person.EmailAddress,
+		&person.PhoneNumber,
+	)
 	if err != nil {
 		if errors.Is(err, errors.New("sql: no rows in result set")) {
 			return nil, domain.ErrNotFound
