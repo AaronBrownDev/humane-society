@@ -18,7 +18,7 @@ func NewMSSQLRefreshToken(conn Connection) domain.RefreshTokenRepository {
 }
 
 func (r *mssqlRefreshTokenRepository) GetAll(ctx context.Context) ([]domain.RefreshToken, error) {
-	query := `SELECT TokenID, UserID, Token, Expires, CreatedAt, RevokedAt, ReplacedByTokenID
+	query := `SELECT TokenID, UserID, Expires, CreatedAt, RevokedAt, ReplacedByTokenID
               FROM auth.RefreshToken`
 
 	rows, err := r.conn.QueryContext(ctx, query)
@@ -36,7 +36,6 @@ func (r *mssqlRefreshTokenRepository) GetAll(ctx context.Context) ([]domain.Refr
 		err = rows.Scan(
 			&token.TokenID,
 			&token.UserID,
-			&token.Token,
 			&token.Expires,
 			&token.CreatedAt,
 			&revokedAt,
@@ -65,7 +64,7 @@ func (r *mssqlRefreshTokenRepository) GetAll(ctx context.Context) ([]domain.Refr
 }
 
 func (r *mssqlRefreshTokenRepository) GetByTokenID(ctx context.Context, tokenID uuid.UUID) (*domain.RefreshToken, error) {
-	query := `SELECT TokenID, UserID, Token, Expires, CreatedAt, RevokedAt, ReplacedByTokenID
+	query := `SELECT TokenID, UserID, Expires, CreatedAt, RevokedAt, ReplacedByTokenID
               FROM auth.RefreshToken 
               WHERE TokenID = @p1`
 
@@ -76,7 +75,6 @@ func (r *mssqlRefreshTokenRepository) GetByTokenID(ctx context.Context, tokenID 
 	err := r.conn.QueryRowContext(ctx, query, tokenID).Scan(
 		&token.TokenID,
 		&token.UserID,
-		&token.Token,
 		&token.Expires,
 		&token.CreatedAt,
 		&revokedAt,
@@ -107,7 +105,7 @@ func (r *mssqlRefreshTokenRepository) GetByTokenID(ctx context.Context, tokenID 
 
 func (r *mssqlRefreshTokenRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (*domain.RefreshToken, error) {
 	// Get the latest non-revoked token for this user
-	query := `SELECT TokenID, UserID, Token, Expires, CreatedAt, RevokedAt, ReplacedByTokenID
+	query := `SELECT TokenID, UserID, Expires, CreatedAt, RevokedAt, ReplacedByTokenID
               FROM auth.RefreshToken 
               WHERE UserID = @p1 AND RevokedAt IS NULL
               ORDER BY CreatedAt DESC`
@@ -119,49 +117,6 @@ func (r *mssqlRefreshTokenRepository) GetByUserID(ctx context.Context, userID uu
 	err := r.conn.QueryRowContext(ctx, query, userID).Scan(
 		&token.TokenID,
 		&token.UserID,
-		&token.Token,
-		&token.Expires,
-		&token.CreatedAt,
-		&revokedAt,
-		&replacedBy,
-	)
-
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, domain.ErrNotFound
-		}
-		return nil, err
-	}
-
-	if revokedAt.Valid {
-		token.RevokedAt = revokedAt.Time
-	}
-
-	if replacedBy.Valid {
-		replacedID, err := uuid.Parse(replacedBy.String)
-		if err != nil {
-			return nil, err
-		}
-		token.ReplacedByTokenID = replacedID
-	}
-
-	return &token, nil
-}
-
-// GetByToken retrieves a refresh token by its token string
-func (r *mssqlRefreshTokenRepository) GetByToken(ctx context.Context, tokenStr string) (*domain.RefreshToken, error) {
-	query := `SELECT TokenID, UserID, Token, Expires, CreatedAt, RevokedAt, ReplacedByTokenID
-              FROM auth.RefreshToken 
-              WHERE Token = @p1`
-
-	var token domain.RefreshToken
-	var revokedAt sql.NullTime
-	var replacedBy sql.NullString
-
-	err := r.conn.QueryRowContext(ctx, query, tokenStr).Scan(
-		&token.TokenID,
-		&token.UserID,
-		&token.Token,
 		&token.Expires,
 		&token.CreatedAt,
 		&revokedAt,
@@ -191,15 +146,14 @@ func (r *mssqlRefreshTokenRepository) GetByToken(ctx context.Context, tokenStr s
 }
 
 func (r *mssqlRefreshTokenRepository) Create(ctx context.Context, token *domain.RefreshToken) error {
-	query := `INSERT INTO auth.RefreshToken (TokenID, UserID, Token, Expires, CreatedAt)
-              VALUES (@p1, @p2, @p3, @p4, @p5)`
+	query := `INSERT INTO auth.RefreshToken (TokenID, UserID, Expires, CreatedAt)
+              VALUES (@p1, @p2, @p3, @p4)`
 
 	_, err := r.conn.ExecContext(
 		ctx,
 		query,
 		token.TokenID,
 		token.UserID,
-		token.Token,
 		token.Expires,
 		token.CreatedAt,
 	)

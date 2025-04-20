@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/AaronBrownDev/HumaneSociety/internal/domain"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -10,6 +11,7 @@ import (
 	"time"
 )
 
+// AuthService provides authentication and authorization functionalities, managing user login, registration, and token handling.
 type AuthService struct {
 	personRepo        domain.PersonRepository
 	userRepo          domain.UserAccountRepository
@@ -19,6 +21,7 @@ type AuthService struct {
 	refreshExpiryDays int
 }
 
+// NewAuthService initializes and returns a new instance of AuthService with the provided repositories and configuration.
 func NewAuthService(personRepo domain.PersonRepository, userRepo domain.UserAccountRepository, refreshTokenRepo domain.RefreshTokenRepository, jwtSecret []byte, jwtExpiryMinutes int, refreshExpiryDays int) *AuthService {
 	return &AuthService{
 		personRepo:        personRepo,
@@ -30,11 +33,14 @@ func NewAuthService(personRepo domain.PersonRepository, userRepo domain.UserAcco
 	}
 }
 
+// LoginRequest represents the input data required for a user login, including their email and password.
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
+// AuthResponse represents the response returned after a successful authentication or token refresh.
+// It includes an access token, refresh token, expiration time, and the associated user ID.
 type AuthResponse struct {
 	AccessToken  string    `json:"accessToken"`
 	RefreshToken string    `json:"refreshToken"`
@@ -61,7 +67,7 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*AuthRespons
 		return nil, errors.New("account is locked")
 	}
 
-	if userAccount.IsActive {
+	if !userAccount.IsActive {
 		return nil, errors.New("account is not active")
 	}
 
@@ -98,12 +104,13 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*AuthRespons
 
 	return &AuthResponse{
 		AccessToken:  accessToken,
-		RefreshToken: refreshToken.Token,
+		RefreshToken: refreshToken.TokenID.String(),
 		ExpiresAt:    expiresAt,
 		UserID:       userAccount.UserID,
 	}, nil
 }
 
+// Register creates a new UserAccount based on the provided Person and password, and persists it in the repositories.
 func (s *AuthService) Register(ctx context.Context, person domain.Person, password string) (*domain.UserAccount, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -111,6 +118,7 @@ func (s *AuthService) Register(ctx context.Context, person domain.Person, passwo
 	}
 
 	// TODO might want to implement create func for person and userAccount.
+	// TODO might create orphan Person if create UserAccount fails. Need to eventually handle that edge case.
 	err = s.personRepo.Create(ctx, &person)
 	if err != nil {
 		return nil, errors.New("failed to create underlying person constraint")
@@ -136,9 +144,33 @@ func (s *AuthService) Register(ctx context.Context, person domain.Person, passwo
 }
 
 // RefreshAccessToken refreshes the access token for the provided refresh token, returning a new AuthResponse if the refresh token is valid.
-func (s *AuthService) RefreshAccessToken(ctx context.Context, refreshToken string) (*AuthResponse, error) {
+func (s *AuthService) RefreshAccessToken(ctx context.Context, refreshTokenIDStr string) (*AuthResponse, error) {
+	refreshTokenID, err := uuid.Parse(refreshTokenIDStr)
+	if err != nil {
+		return nil, errors.New("invalid refresh token format")
+	}
 
-	return nil, errors.New("not implemented")
+	refreshToken, err := s.validateRefreshToken(ctx, refreshTokenID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate refresh token: %w", err)
+	}
+
+	accessToken, expiresAt, err := s.generateAccessToken(refreshToken.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate token: %w", err)
+	}
+
+	newRefreshToken, err := s.rotateRefreshToken(ctx, refreshToken)
+	if err != nil {
+		return nil, fmt.Errorf("failed to rotate refresh token: %w", err)
+	}
+
+	return &AuthResponse{
+		AccessToken:  accessToken,
+		RefreshToken: newRefreshToken.TokenID.String(),
+		ExpiresAt:    expiresAt,
+		UserID:       refreshToken.UserID,
+	}, nil
 }
 
 // Helper methods
@@ -162,30 +194,44 @@ func (s *AuthService) generateAccessToken(userID uuid.UUID) (string, time.Time, 
 // generateRefreshToken creates a new JWT refresh token for the provided userID, returning the token or an error.
 func (s *AuthService) generateRefreshToken(ctx context.Context, userID uuid.UUID) (*domain.RefreshToken, error) {
 	tokenID := uuid.New()
-	tokenString := uuid.New().String()
 	expirationTime := time.Now().Add(time.Hour * 24 * time.Duration(s.refreshExpiryDays))
 
 	refreshToken := domain.RefreshToken{
 		TokenID:   tokenID,
 		UserID:    userID,
-		Token:     tokenString,
 		Expires:   expirationTime,
 		CreatedAt: time.Now(),
 	}
 
 	err := s.refreshTokenRepo.Create(ctx, &refreshToken)
 	if err != nil {
-		return nil, errors.New("failed to save refresh token")
+		return nil, fmt.Errorf("failed to save refresh token: %w", err)
 	}
 
 	return &refreshToken, nil
 }
 
-func (s *AuthService) validateRefreshToken(ctx context.Context, token string) (*domain.RefreshToken, error) {
+// validateRefreshToken validates the given refresh token by its ID, checking if it exists, is not expired, and not revoked.
+func (s *AuthService) validateRefreshToken(ctx context.Context, tokenID uuid.UUID) (*domain.RefreshToken, error) {
+	token, err := s.refreshTokenRepo.GetByTokenID(ctx, tokenID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid refresh token: %w", err)
+	}
 
-	return nil, errors.New("not implemented")
+	// if expired throw error
+	if token.Expires.Before(time.Now()) {
+		return nil, errors.New("refresh token expired")
+	}
+
+	// if revoked throw error
+	if !token.RevokedAt.IsZero() {
+		return nil, errors.New("refresh token revoked")
+	}
+
+	return token, nil
 }
 
+// rotateRefreshToken revokes the old refresh token and generates a new one, linking them for traceability.
 func (s *AuthService) rotateRefreshToken(ctx context.Context, oldToken *domain.RefreshToken) (*domain.RefreshToken, error) {
 	newToken, err := s.generateRefreshToken(ctx, oldToken.UserID)
 	if err != nil {

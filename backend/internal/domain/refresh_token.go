@@ -8,9 +8,8 @@ import (
 
 // RefreshToken represents a JWT refresh token
 type RefreshToken struct {
-	TokenID           uuid.UUID `json:"-"`
+	TokenID           uuid.UUID `json:"tokenID"`
 	UserID            uuid.UUID `json:"-"`
-	Token             string    `json:"token"`
 	Expires           time.Time `json:"expires"`
 	CreatedAt         time.Time `json:"-"`
 	RevokedAt         time.Time `json:"-"`
