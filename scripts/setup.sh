@@ -17,13 +17,6 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-# Set up environment file (only in the deploy directory)
-if [ ! -f "deploy/.env" ]; then
-    echo "Creating deployment environment file..."
-    cp deploy/.env.example deploy/.env
-    echo "Deployment .env file created. Review the settings if needed."
-fi
-
 # Build and start containers
 echo "Building and starting Docker containers..."
 cd deploy

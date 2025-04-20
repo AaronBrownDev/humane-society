@@ -9,12 +9,13 @@ services:
       - "1435:1433"
     volumes:
       - mssql-data:/var/opt/mssql
-    healthcheck:
-      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "YourStrongPassword123!" -Q "SELECT 1" || exit 1
-      interval: 15s
-      timeout: 3s
-      retries: 10
-      start_period: 120s
+    # healthcheck fails no matter what I do for some reason. I need to fix this in the future.
+    # healthcheck:
+    #   test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "YourStrongPassword123!" -Q "SELECT 1" -b -o /dev/null || exit 1
+    #   interval: 5s
+    #   timeout: 3s
+    #   retries: 5
+    #   start_period: 30s
 
   backend:
     build:
@@ -28,10 +29,16 @@ services:
       - DB_NAME=HumaneSociety
       - DB_USER=sa
       - DB_PASSWORD=YourStrongPassword123!
+      - DB_MAX_OPEN_CONNS=25
+      - DB_MAX_IDLE_CONNS=10
+      - DB_CONN_MAX_LIFE_TIME=5
       - MIGRATION_DIR=/app/migrations/mssql
-    restart: always
-    # Avoid healthcheck dependency and use a custom entrypoint script instead
-    entrypoint: ["sh", "-c", "sleep 30 && /app/server"]
+    # I do not know why but depends on service healthy always fails even though database connection works fine with backend
+    # depends_on:
+    #   db:
+    #     condition: service_healthy
+    restart: on-failure
+    entrypoint: ["/bin/sh", "-c", "sleep 30 && /app/server"]
 
   frontend:
     build:
