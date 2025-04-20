@@ -1,6 +1,8 @@
 #!/bin/bash
 # setup.sh - Development environment setup for Humane Society Management System
 
+echo "Make sure script is being run in HumaneSociety directory"
+
 echo "Setting up development environment for Humane Society Management System..."
 
 # Exit on any error
@@ -16,15 +18,15 @@ if ! command -v docker &> /dev/null; then
 fi
 
 # Set up environment file (only in the deploy directory)
-if [ ! -f "../deploy/.env" ]; then
+if [ ! -f "deploy/.env" ]; then
     echo "Creating deployment environment file..."
-    cp ../deploy/.env.example ../deploy/.env
+    cp deploy/.env.example deploy/.env
     echo "Deployment .env file created. Review the settings if needed."
 fi
 
 # Build and start containers
 echo "Building and starting Docker containers..."
-cd ../deploy
+cd deploy
 docker compose up --build -d
 
 # Wait for services to be ready
