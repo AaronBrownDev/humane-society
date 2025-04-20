@@ -35,7 +35,7 @@ echo "Development environment setup complete!"
 echo
 echo "Available services:"
 echo "  - Frontend: http://localhost:5173"
-echo "  - Backend API: http://localhost:8080"
+echo "  - Backend API: http://localhost:8080/api/"
 echo
 echo "Useful commands:"
 echo "  - View logs: cd deploy && docker compose logs -f"
