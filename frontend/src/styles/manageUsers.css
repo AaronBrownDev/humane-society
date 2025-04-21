@@ -1,0 +1,27 @@
+.users-container {
+
+    width: 100%;
+    .top,.bottom{
+        display: flex;
+        margin: 20px;
+        box-shadow: 2px 4px 10px 1px rgba(201,201,201,0.47);
+        padding: 10px;
+        width: 100%;
+        h1{
+            color:cornflowerblue;
+            font-size: 20px;
+
+        }
+        .left{
+            flex:1;
+
+        }
+        .right{
+            flex: 2;
+        }
+        button{
+            padding: 10px;
+        }
+    }
+
+}

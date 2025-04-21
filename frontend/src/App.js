@@ -1,2 +1,2 @@
 import React from "react"
-import Navbar from "./components/layout/Navbar.jsx"
+import PublicNavbar from "./components/layout/PublicNavbar.jsx"
