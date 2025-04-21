@@ -33,10 +33,27 @@ func NewAuthService(personRepo domain.PersonRepository, userRepo domain.UserAcco
 	}
 }
 
+// RegisterRequest represents the input data for user registration
+type RegisterRequest struct {
+	FirstName       string    `json:"firstName"`
+	LastName        string    `json:"lastName"`
+	EmailAddress    string    `json:"emailAddress"`
+	PhysicalAddress string    `json:"physicalAddress"`
+	MailingAddress  string    `json:"mailingAddress"`
+	BirthDate       time.Time `json:"birthDate"`
+	PhoneNumber     string    `json:"phoneNumber"`
+	Password        string    `json:"password"`
+}
+
 // LoginRequest represents the input data required for a user login, including their email and password.
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+// RefreshTokenRequest represents the input data required for a refresh token request, including the refresh token ID.
+type RefreshTokenRequest struct {
+	RefreshTokenID string `json:"refreshTokenID"`
 }
 
 // AuthResponse represents the response returned after a successful authentication or token refresh.
@@ -111,8 +128,19 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*AuthRespons
 }
 
 // Register creates a new UserAccount based on the provided Person and password, and persists it in the repositories.
-func (s *AuthService) Register(ctx context.Context, person domain.Person, password string) (*domain.UserAccount, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+func (s *AuthService) Register(ctx context.Context, req RegisterRequest) (*domain.UserAccount, error) {
+	person := domain.Person{
+		PersonID:        uuid.New(),
+		FirstName:       req.FirstName,
+		LastName:        req.LastName,
+		BirthDate:       req.BirthDate,
+		PhysicalAddress: req.PhysicalAddress,
+		MailingAddress:  req.MailingAddress,
+		EmailAddress:    req.EmailAddress,
+		PhoneNumber:     req.PhoneNumber,
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, errors.New("failed to hash password")
 	}
@@ -133,7 +161,6 @@ func (s *AuthService) Register(ctx context.Context, person domain.Person, passwo
 		CreatedAt:           time.Now(),
 	}
 
-	// TODO have to look into if create should return UserAccount because I didn't think about that initially.
 	result, err := s.userRepo.Create(ctx, userAccount)
 	if err != nil {
 		return nil, errors.New("failed to create user account")
@@ -144,8 +171,8 @@ func (s *AuthService) Register(ctx context.Context, person domain.Person, passwo
 }
 
 // RefreshAccessToken refreshes the access token for the provided refresh token, returning a new AuthResponse if the refresh token is valid.
-func (s *AuthService) RefreshAccessToken(ctx context.Context, refreshTokenIDStr string) (*AuthResponse, error) {
-	refreshTokenID, err := uuid.Parse(refreshTokenIDStr)
+func (s *AuthService) RefreshAccessToken(ctx context.Context, req RefreshTokenRequest) (*AuthResponse, error) {
+	refreshTokenID, err := uuid.Parse(req.RefreshTokenID)
 	if err != nil {
 		return nil, errors.New("invalid refresh token format")
 	}
