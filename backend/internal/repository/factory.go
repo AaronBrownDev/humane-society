@@ -27,6 +27,10 @@ type Storage struct {
 	Medicines          domain.MedicineRepository
 	Supplies           domain.SupplyRepository
 	ItemCatalog        domain.ItemCatalogRepository
+	UserAccounts       domain.UserAccountRepository
+	UserRoles          domain.UserRoleRepository
+	Roles              domain.RoleRepository
+	RefreshTokens      domain.RefreshTokenRepository
 }
 
 // NewMSSQLStorage creates a new storage with all repositories initialized
@@ -50,5 +54,9 @@ func NewMSSQLStorage(db *sql.DB) *Storage {
 		Medicines:          NewMSSQLMedicine(conn),
 		Supplies:           NewMSSQLSupply(conn),
 		ItemCatalog:        NewMSSQLItemCatalog(conn),
+		UserAccounts:       NewMSSQLUserAccount(conn),
+		UserRoles:          NewMSSQLUserRole(conn),
+		Roles:              NewMSSQLRole(conn),
+		RefreshTokens:      NewMSSQLRefreshToken(conn),
 	}
 }
