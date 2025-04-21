@@ -7,7 +7,7 @@ export default function ManageUsers() {
 
     ])
     //Api call
-    async function handleSubmit(formData) {
+    async function handleSubmit() {
         try {
             const response = await fetch('https://api.example.com/data', {
                 method: 'POST',
@@ -27,6 +27,7 @@ export default function ManageUsers() {
 
             const result = await response.json();
             console.log('Success:', result);
+
         } catch (error) {
             console.error('Error:', error);
         }

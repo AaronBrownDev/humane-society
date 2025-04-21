@@ -19,6 +19,7 @@ import AdminLayout from "./components/layout/AdminLayout.jsx";
 import UserLayout from "./components/layout/UserLayout.jsx";
 import Unauthorized from "./pages/public/Unauthorized.jsx";
 
+
 export default function App() {
   return (
 
@@ -33,18 +34,19 @@ export default function App() {
           <Route path="/LoginPage" element = {<LoginPage/>}/>
           <Route path="/Registration" element={<Registration />} />
           <Route path="/Unauthorized" element={<Unauthorized />} />
+            <Route path="/Adopt" element={<Adopt />} />
         </Route>
 
           {/**User Routes */}
-          <Route element={<ProtectedRoute> <UserLayout/> </ProtectedRoute>} >
-            <Route path="/Adopt" element={<Adopt />} />
+          <Route element={ <UserLayout/> } >
+
             <Route path="/Volunteer" element={<Volunteer />} />
             <Route path="/Surrendering" element={<Surrendering />} />
           </Route>
 
 
           {/** Admin Routes (Protected*/}
-          <Route path ="/" element={ <AdminLayout/> }>
+        <Route path ="/" element={ <AdminLayout/> }>
             <Route path="/Dashboard" element={<Dashboard />} />
             <Route path="/ManageDogs" element={<ManageDogs />}/>
             <Route path="/ManageUsers" element={<ManageUsers />}/>

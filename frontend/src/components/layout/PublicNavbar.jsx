@@ -17,8 +17,8 @@ export default function PublicNavbar(){
                     <li><NavLink to= "/Support"> Other Ways to Support</NavLink></li>
                     <li><NavLink to= "/Sponsors"> Sponsors</NavLink></li>
                     <li><NavLink to= "/Contact"> Contact</NavLink></li>
-                    <li><NavLink to="/LoginPage">Login Page</NavLink></li>
-                    <li><NavLink to='/DashBoard'>Dashboard</NavLink></li>
+                    <li><NavLink to="/LoginPage">Login</NavLink></li>
+
                 </ul>
             </nav>
             

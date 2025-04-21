@@ -74,7 +74,7 @@ export default function Registration() {
 
     // Handle form submission
     const handleSubmit = async (e) => {
-        e.preventDefault();
+
 
         // Reset messages
         setApiError('');
@@ -130,7 +130,8 @@ export default function Registration() {
             }, 3000);
 
         } catch (error) {
-            setApiError(error.message || 'An error occurred during registration');
+            console.log(error.message || 'An error occurred during registration');
+
         } finally {
             setIsLoading(false);
         }
@@ -141,6 +142,7 @@ export default function Registration() {
     return (
         <div className="registrationContainer">
             <div className="formconcontainer">
+                <h2> Registration</h2>
                 {apiError && (
                     <div className="error-message">
                         {apiError}

@@ -11,14 +11,15 @@ export default function AdminSideBar() {
             <div className="admin-side-bar-container">
                 <div className='admin-side-bar'>
                     <div className='header'>
-                        <img src='../../assets/humane-society-2022_orig.png' alt='Humane Society Logo' />
-                        <h4> Management System</h4>
+                        {/**<img src='frontend/src/assets/humane-society-2022_orig.png' alt='Humane Society Logo' />*/}
+                        <h4> Humane Society Management System</h4>
                     </div>
                     <ul className="admin-ulContainer">
                         <h4 className="menu"> Menu </h4>
                         <li className="admin-liContainer"><NavLink to='/Dashboard'>Dashboard</NavLink></li>
                         <li className="admin-liContainer"><NavLink to='ManageUsers'>Manage Users</NavLink> </li>
                         <li className="admin-liContainer"><NavLink to='ManageDogs'>Manage Dogs</NavLink> </li>
+                        <li className="admin-liContainer"><NavLink to='/'> Go to Website</NavLink></li>
 
                     </ul>
                 </div>
