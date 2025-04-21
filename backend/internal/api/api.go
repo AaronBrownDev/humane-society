@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/AaronBrownDev/HumaneSociety/internal/repository"
+	"github.com/AaronBrownDev/HumaneSociety/internal/services"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"log"
@@ -15,15 +16,31 @@ import (
 
 type api struct {
 	repositories *repository.Storage
+	authService  *services.AuthService
 	db           *sql.DB
 	logger       *log.Logger
 }
 
 func NewAPI(db *sql.DB) *api {
+	repos := repository.NewMSSQLStorage(db)
+
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
+	if len(jwtSecret) == 0 {
+		log.Fatalf("Set JWT_SECRET environment variable")
+	}
+
 	return &api{
-		repositories: repository.NewMSSQLStorage(db),
-		db:           db,
-		logger:       log.New(os.Stdout, "api: ", log.LstdFlags),
+		repositories: repos,
+		authService: services.NewAuthService(
+			repos.People,
+			repos.UserAccounts,
+			repos.RefreshTokens,
+			jwtSecret,
+			15,
+			7,
+		),
+		db:     db,
+		logger: log.New(os.Stdout, "api: ", log.LstdFlags),
 	}
 }
 
@@ -39,6 +56,14 @@ func (a *api) Routes() http.Handler {
 
 	// Health check
 	router.Get("/health", a.healthCheckHandler)
+
+	// Auth routes
+	//router.Route("/api/auth", func(r chi.Router) {
+	//	r.Post("/register", a.registerHandler)
+	//	r.Post("/login", a.loginHandler)
+	//	r.Post("/refresh", a.refreshTokenHandler)
+	//	r.Post("/logout", a.logoutHandler)
+	//})
 
 	// Dog routes
 	router.Route("/api/dogs", func(r chi.Router) {
