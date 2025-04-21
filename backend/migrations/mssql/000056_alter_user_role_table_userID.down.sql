@@ -1,0 +1,2 @@
+ALTER TABLE auth.UserRole
+DROP CONSTRAINT UQ_UserRole_UserID;
