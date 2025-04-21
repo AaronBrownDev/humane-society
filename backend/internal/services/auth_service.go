@@ -200,6 +200,33 @@ func (s *AuthService) RefreshAccessToken(ctx context.Context, req RefreshTokenRe
 	}, nil
 }
 
+// RevokeToken invalidates a refresh token in the database.
+// It marks the token as revoked by setting its RevokedAt timestamp to the current time.
+// Returns an error if the token doesn't exist or the database operation fails.
+func (s *AuthService) RevokeToken(ctx context.Context, tokenID uuid.UUID) error {
+	// Find the token
+	token, err := s.refreshTokenRepo.GetByTokenID(ctx, tokenID)
+	if err != nil {
+		return fmt.Errorf("failed to find token: %w", err)
+	}
+
+	// If token is already revoked, just return success
+	if !token.RevokedAt.IsZero() {
+		return nil
+	}
+
+	// Mark the token as revoked
+	token.RevokedAt = time.Now()
+
+	// Update the token in the database
+	_, err = s.refreshTokenRepo.Update(ctx, token)
+	if err != nil {
+		return fmt.Errorf("failed to revoke token: %w", err)
+	}
+
+	return nil
+}
+
 // Helper methods
 
 // generateAccessToken creates a new JWT access token for the provided userID, returning the token, its expiration, or an error.
