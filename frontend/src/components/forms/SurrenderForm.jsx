@@ -23,23 +23,22 @@ export default function SurrenderForm(){
     return (
         
         <form  action={handleSubmit}>
-            <label>FirstName *:
+            <label>FirstName *:</label>
                 <input
                     type="text"
                     name="first_name"
                     value = {inputs.first_name}
                     onChange={handleChange}
                     required/>
-                </label>
-            <label>
-                Last Name *:
+
+            <label>Last Name *:</label>
                 <input
                     type="text"
                     name="last_name"
                     value = {inputs.last_name}
                     onChange={handleChange}
                     required/>
-            </label>
+
             <label>Address *: </label>
                 <input
                     name="surr_address"

@@ -18,73 +18,224 @@ export default function VolunteerForm(){
     return(
         <div className="volunteer-form">
         <form action={handleSubmit} >
-                <label>First Name *: <input type="text" name="first_name" required/> Last Name*<input type="text" name="last_name" required/></label>
-                <label>Age *: <input type="text" name="age" required/></label>
-                <label>Email *: <input type="email" name="email" required/></label>
-                <label>Full Home Address *: <input type="textarea " name="address" required/></label>
-                <label>Phone Number *: <input type="tel" name="phone" required/></label>
-                <label>Do You Have Current Animals? *:
-                    <select name="current_animals" required>
+                <label>First Name *: </label>
+                    <input
+                        type="text"
+                        name="first_name"
+                        value={inputs.first_name}
+                        onChange={handleChange}
+                        required/>
+                <label>Last Name*</label>
+                    <input
+                        type="text"
+                        name="last_name"
+                        value={inputs.last_name}
+                        onChange={handleChange}
+                        required/>
+                <label>Age *:</label>
+                    <input
+                        type="number"
+                        name="age"
+                        value={inputs.age}
+                        onChange={handleChange}
+                        required/>
+                <label>Email *:</label>
+                    <input
+                        type="email"
+                        name="email"
+                        value={inputs.email}
+                        onChange={handleChange}
+                        required/>
+                <label>Full Home Address *:</label>
+                    <input
+                        type="textarea "
+                        name="address"
+                        value={inputs.address}
+                        onChange={handleChange}
+                        required/>
+                <label>Phone Number *:</label>
+                    <input
+                        type="tel"
+                        name="phone"
+                        value={inputs.phone}
+                        onChange={handleChange}
+                        placeholder='123-123-1234'
+                        required/>
+                <label>Do You Have Current Animals? *:</label>
+                    <select
+                        name="current_animals"
+                        value={inputs.current_animals}
+                        onChange={handleChange}
+                        required>
                         <option value="Yes">Yes</option>
                         <option value="No">No</option>
                     </select>
-                </label>
-                <label>Animal Name(s): <input type="text" name="animal_names"/></label>
-                <label>If So, How Many?: <input type="number" name="animal_count"/></label>
-                <label>What Kind of Animals Do You Have?: <input type="text" name="breed"/></label>
-                <label>Vet Name: <input type="text" name="veterinarian_name"/></label>
-                <label>Vet Number: <input type="text" name="veterinarian_number"/></label>
-                
-                <label>List the Client's Name the Veterinarian Records Are Under: <input type="text" name="vet_client_name"/></label>
-                <label>Consent to Contact Veterinarian for Records: <input type="text" name="vet_consent"/></label>
-                <label>Authorization to Release Records: <input type="text" name="vet_authorization"/></label>
-                <label>Are You Willing to Promote Spay/Neuter and Pet Education? *:
-                    <select name="promote_spay_neuter" required>
+
+                <label>Animal Name(s):</label>
+                    <input
+                        type="text"
+                        name="animal_names"
+                        value={inputs.animal_names}
+                        onChange={handleChange}
+                    />
+                <label>If So, How Many?:</label>
+                    <input
+                        type="number"
+                        name="animal_count"
+                        value={inputs.animal_count}
+                        onChange={handleChange}
+                    />
+                <label>What Kind of Animals Do You Have?:</label>
+                    <input
+                        type="text"
+                        name="breed"
+                        value={inputs.breed}
+                        onChange={handleChange}
+                    />
+            {/** Vet's Info*/}
+                <label>Vet Name:</label>
+                    <input
+                        type="text"
+                        name="veterinarian_name"
+                        value={inputs.veterinarian_name}
+                        onChange={handleChange}
+                    />
+                <label>Vet Number:</label>
+                    <input
+                        type="text"
+                        name="veterinarian_number"
+                        value={inputs.veterinarian_number}
+                        onChange={handleChange}
+                    />
+                <label>List the Client's Name the Veterinarian Records Are Under: </label>
+                    <input
+                        type="text"
+                        name="vet_client_name"
+                        value={inputs.veterinarian_number}
+                        onChange={handleChange}
+                    />
+                <label>Consent to Contact Veterinarian for Records:</label>
+                    <input
+                        type="text"
+                        name="vet_consent"
+                        value={inputs.vet_consent}
+                        onChange={handleChange}
+                    />
+                <label>Authorization to Release Records:</label>
+                    <input
+                        type="text"
+                        name="vet_authorization"
+                        value={inputs.vet_authorization}
+                        onChange={handleChange}
+                    />
+            {/**Volunteer Knowledge*/}
+                <label>Are You Willing to Promote Spay/Neuter and Pet Education? *:</label>
+                    <select
+                        name="promote_spay_neuter"
+                        value={inputs.promote_spay_neuter}
+                        onChange={handleChange}
+                        required>
                         <option value="Yes">Yes</option>
                         <option value="No">No</option>
                     </select>
-                </label>
-                <label>Do You Believe in Breeding of Dogs and Cats? *:
-                    <select name="believe_breeding" required>
+
+                <label>Do You Believe in Breeding of Dogs and Cats? *:</label>
+                    <select
+                        name="believe_breeding"
+                        value={inputs.believe_breeding}
+                        onChange={handleChange}
+                        required>
                         <option value="Yes">Yes</option>
                         <option value="No">No</option>
                     </select>
-                </label>
-                <label>Are You Willing to Clean Kennels and Scoop Yards? *:
-                    <select name="cleaning_kennels" required>
+
+            {/**Volunteer Preferences*/}
+                <label>Are You Willing to Clean Kennels and Scoop Yards? *:</label>
+                    <select
+                        name="cleaning_kennels"
+                        value={inputs.cleaning_kennels}
+                        onChange={handleChange}
+                        required>
                         <option value="Yes">Yes</option>
                         <option value="No">No</option>
                     </select>
-                </label>
-                <label>Are You Willing to Brush and Play with Dogs? *:
-                    <select name="brush_play_dogs" required>
+
+                <label>Are You Willing to Brush and Play with Dogs? *:</label>
+                    <select
+                        name="brush_play_dogs"
+                        value={inputs.brush_play_dogs}
+                        onChange={handleChange}
+                        required>
                         <option value="Yes">Yes</option>
                         <option value="No">No</option>
                     </select>
-                </label>
-                <label>Are You Allergic to Dogs? *:
-                    <select name="allergic_dogs" required>
+
+                <label>Are You Allergic to Dogs? *: </label>
+                    <select
+                        name="allergic_dogs"
+                        value={inputs.brush_play_dogs}
+                        onChange={handleChange}
+                        required>
                         <option value="Yes">Yes</option>
                         <option value="No">No</option>
                     </select>
-                </label>
-                <label>Do You Have Any Limitations for Certain Duties? *:
-                    <select name="limitations" required>
+
+                <label>Do You Have Any Limitations for Certain Duties? *:</label>
+                    <select
+                        name="limitations"
+                        value={inputs.limitations}
+                        onChange={handleChange}
+                        required>
                         <option value="Yes">Yes</option>
                         <option value="No">No</option>
                     </select>
-                </label>
-                <label>Are You Wanting to Volunteer for Community Service Hours? *:
-                    <select name="community_service" required>
+
+                <label>Are You Wanting to Volunteer for Community Service Hours? *:</label>
+                    <select
+                        name="community_service"
+                        value={inputs.community_service}
+                        onChange={handleChange}
+                        required>
                         <option value="Yes">Yes</option>
                         <option value="No">No</option>
                     </select>
-                </label>
-                <label>If Yes, Please Explain Why Needed: <input type="text" name="community_service_reason"/></label>
-                <label>If Yes, How Many Hours Are Needed and By When?: <input type="text" name="community_service_hours"/></label>
-                <label>How Did You Hear About the HSNWLA? *: <input type="text" name="referral_source" required/></label>
-                <label>Any Other Questions or Comments?: <input name="additional_comments"></input></label>
-                <label>Available Volunteer Shifts: <input type="text" name="volunteer_shifts"/></label>
+
+                <label>If Yes, Please Explain Why Needed:</label>
+                    <input
+                        type="text"
+                        name="community_service_reason"
+                        value={inputs.community_service_reason}
+                        onChange={handleChange}
+                    />
+                <label>If Yes, How Many Hours Are Needed and By When?:</label>
+                    <input
+                        type="number"
+                        name="community_service_hours"
+                        value={inputs.community_service_hours}
+                        onChange={handleChange}
+                    />
+                <label>How Did You Hear About the HSNWLA? *:</label>
+                    <input
+                        type="text"
+                        name="referral_source"
+                        value={inputs.referral_source}
+                        onChange={handleChange}
+                        required/>
+                <label>Any Other Questions or Comments?:</label>
+                    <input
+                        type="text"
+                        name="additional_comments"
+                        value={inputs.additional_comments}
+                        onChange={handleChange}
+                    />
+                <label>Available Volunteer Shifts:</label>
+                    <input
+                        type="text"
+                        name="volunteer_shifts"
+                        value={inputs.volunteer_shifts}
+                        onChange={handleChange}
+                        required
+                    />
                 
                 <button type="submit">Submit</button>
             </form>

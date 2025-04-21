@@ -1,0 +1,11 @@
+
+.admin-nav-bar {
+    width: 100%;
+    flex:8;
+    .wrapper{
+        padding: 10px;
+        width: 100%;
+
+    }
+}
+

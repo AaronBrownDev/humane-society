@@ -1,11 +1,11 @@
-import Navbar from "./Navbar.jsx"
+import PublicNavbar from "./PublicNavbar.jsx"
 import { Outlet } from "react-router-dom"
 import Section8 from "../public/sections/Section8.jsx";
 
-export default function Layout() {
+export default function PublicLayout() {
     return (
       <>
-        <Navbar />
+        <PublicNavbar />
         <div className="layout-content">
             <Outlet />
         </div>

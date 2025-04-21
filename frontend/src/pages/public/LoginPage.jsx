@@ -1,10 +1,18 @@
 import React from "react";
+import useAuth from "../../hooks/useAuth.js";
 import  "../../styles/Login.css";
 
-import { NavLink } from "react-router-dom";
+import { NavLink,useNavigate, useLocation } from "react-router-dom";
+
 
 
 export default function LoginPage() {
+
+    const {setAuth} = useAuth;
+
+    const navigate = useNavigate();
+    const location = useLocation();
+    const from = location.state?.from?.pathname || "/";
 
     const userRef = React.useRef();
     const errRef = React.useRef();
@@ -51,33 +59,29 @@ export default function LoginPage() {
                 }),
             });
 
-            const data = await response.json();
+            const accessToken = response?.data?.accessToken;
+            const roles = response?.data.roles;
 
-            if (!response.ok) {
-                // Handle error response from server
-                throw new Error(data.message || 'Login failed');
-            }
+            setAuth({email, password,roles,accessToken});
+            setEmail('');
+            setPassword('');
+            navigate(from, {replace: true});
 
-            // Store authentication token in localStorage
-            localStorage.setItem('authToken', data.token);
-
-            // Store user info if needed
-            if (data.user) {
-                localStorage.setItem('user', JSON.stringify(data.user));
-            }
-
-            // Show success message
-            setSuccessMessage('Login successful!');
-
-            // Redirect to dashboard after successful login
-            setTimeout(() => {
+            {/**setTimeout(() => {
                 window.location.href = '/dashboard';
-            }, 1500);
+            }, 1500);*/}
 
-        } catch (error) {
-            setErrMsg(error.message || 'An error occurred during login');
-        } finally {
-            setIsLoading(false);
+         } catch (error) {
+            if (!error?.response) {
+                setErrMsg('No Server Response');
+            } else if (error.response?.status === 400) {
+                setErrMsg('Missing Username or Password');
+            } else if (error.response?.status === 401) {
+                setErrMsg('Unauthorized');
+            } else {
+                setErrMsg('Login Failed');
+            }
+            errRef.current.focus();
         }
     }
         return (

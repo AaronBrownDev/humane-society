@@ -3,67 +3,157 @@ import "../../styles/Registration.css"
 import {NavLink} from "react-router-dom";
 
 export default function Registration() {
-    let isValid =true;
     const [formData, setFormData] = useState({
-        first_name:'',
-        last_name:'',
-        email:'',
-        password:'',
-        confirmpassword:'',
-    })
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        confirmPassword: ''
+    });
 
-    const [error,setErrors] = useState({})
-    const [valid,setValid] = useState(true)
+    // UI state
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState({});
+    const [apiError, setApiError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
 
+    // Handle input changes
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData({
+            ...formData,
+            [name]: value
+        });
 
-
-    function handleSubmit() {
-
-        let validationErrors = {}
-        if (formData.first_name === "" || formData.first_name === null) {
-            isValid = false;
-            validationErrors.first_name = "First name is required";
+        // Clear specific field error when user types
+        if (error[name]) {
+            setError({
+                ...error,
+                [name]: ''
+            });
         }
-        if (formData.last_name === "" || formData.last_name === null) {
-            isValid = false;
-            validationErrors.last_name = "Last name is required";
-        }
+    };
 
-        if (formData.password === "" || formData.password === null) {
-            isValid = false;
-            validationErrors.password = "Password is required";
-        } else if (formData.password.length < 6) {
-            isValid = false;
-            validationErrors.password = "Password need 6 or more characters";
-        }
+    // Validate form data
+    const validateForm = () => {
+        const newErrors = {};
 
-        if (formData.confirmpassword !== formData.password) {
-            isValid = false;
-            validationErrors.password = "Passwords do not match";
-        }
-
-        setErrors(validationErrors);
-        setValid(isValid);
-
-        if (Object.keys(!validationErrors).length === 0) {
-            alert("Registration unsuccessful!");
-        }else if (Object.keys(validationErrors).length === 0) {
-            //Call api?
-            alert("Registration Successful!");
-            console.log(formData)
+        // Validate first name
+        if (!formData.firstName.trim()) {
+            newErrors.firstName = 'First name is required';
         }
 
-    }
+        // Validate last name
+        if (!formData.lastName.trim()) {
+            newErrors.lastName = 'Last name is required';
+        }
+
+        // Validate email
+        if (!formData.email.trim()) {
+            newErrors.email = 'Email is required';
+        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+            newErrors.email = 'Email is invalid';
+        }
+
+        // Validate password
+        if (!formData.password) {
+            newErrors.password = 'Password is required';
+        } else if (formData.password.length < 8) {
+            newErrors.password = 'Password must be at least 8 characters';
+        }
+
+        // Validate password confirmation
+        if (!formData.confirmPassword) {
+            newErrors.confirmPassword = 'Please confirm your password';
+        } else if (formData.password !== formData.confirmPassword) {
+            newErrors.confirmPassword = 'Passwords do not match';
+        }
+
+        return newErrors;
+    };
+
+    // Handle form submission
+    const handleSubmit = async (e) => {
+
+
+        // Reset messages
+        setApiError('');
+        setSuccessMessage('');
+
+        // Validate form
+        const formErrors = validateForm();
+        if (Object.keys(formErrors).length > 0) {
+            setError(formErrors);
+            return;
+        }
+
+        // Start loading
+        setIsLoading(true);
+
+        try {
+            // Make API request to registration endpoint
+            const response = await fetch('https://api.example.com/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    email: formData.email,
+                    password: formData.password
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                // Handle error response from server
+                throw new Error(data.message || 'Registration failed');
+            }
+
+            // Show success message
+            setSuccessMessage('Registration successful! You can now log in.');
+
+            // Clear form
+            setFormData({
+                firstName: '',
+                lastName: '',
+                email: '',
+                password: '',
+                confirmPassword: ''
+            });
+
+            // Optional: Redirect to login page after delay
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 3000);
+
+        } catch (error) {
+            console.log(error.message || 'An error occurred during registration');
+
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+
+
     return (
         <div className="registrationContainer">
             <div className="formconcontainer">
-                {
-                    valid ? <></>:
-                        <span className = "text-danger">
-                            {error.first_name}; {error.last_name};{error.password};{error.confirmpassword}
+                <h2> Registration</h2>
+                {apiError && (
+                    <div className="error-message">
+                        {apiError}
+                    </div>
+                )}
 
-                        </span>
-                }
+                {successMessage && (
+                    <div className="success-message">
+                        {successMessage}
+                    </div>
+                )}
                 <form action={handleSubmit}>
                     <label htmlFor="first_name">First Name</label>
                     <input
@@ -71,7 +161,7 @@ export default function Registration() {
                         id="first_name"
                         name="first_name"
                         placeholder="First Name"
-                        onChange={(event) => setFormData({...formData, first_name: event.target.value})}
+                        onChange={handleChange}
                     />
                     <label htmlFor="last_name">Last Name</label>
                     <input
@@ -79,7 +169,7 @@ export default function Registration() {
                         id="last_name"
                         name="last_name"
                         placeholder="Last Name"
-                        onChange={(event) => setFormData({...formData, last_name: event.target.value})}
+                        onChange={handleChange}
                     />
                     <label htmlFor="email">Email</label>
                     <input
@@ -87,7 +177,7 @@ export default function Registration() {
                         id='email'
                         name = "email"
                         placeholder="Email"
-                        onChange={(event) => setFormData({...formData, email: event.target.value})}
+                        onChange={handleChange}
                     />
                     <label htmlFor="password">Password</label>
                     <input
@@ -95,7 +185,7 @@ export default function Registration() {
                         id="password"
                         name="password"
                         placeholder="Password"
-                        onChange={(event) => setFormData({...formData, password: event.target.value})}
+                        onChange={handleChange}
                         />
                     <label htmlFor="confirmPassword">Confirm Password</label>
                     <input
@@ -103,18 +193,17 @@ export default function Registration() {
                         id="confirmPassword"
                         name="confirmPassword"
                         placeholder="Confirm Password"
-                        onChange={(event) => setFormData({...formData, confirmpassword: event.target.value})}
+                        onChange={handleChange}
                     />
 
-                    <button type="submit">Submit</button>
+                    <button
+                        type="submit"
+                        className="register-button"
+                        disabled={isLoading}
+                    >
+                        {isLoading ? 'Creating Account...' : 'Create Account'}
+                    </button>
 
-                    <p>
-                        Already have an Account?<br/>
-                        <span className='line'>
-                        <NavLink to ="/LoginPage"> Login </NavLink>
-                    </span>
-
-                    </p>
 
                 </form>
             </div>
