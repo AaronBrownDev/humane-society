@@ -8,15 +8,21 @@ import (
 	"github.com/google/uuid"
 )
 
+// mssqlDogRepository implements domain.DogRepository interface using SQL Server.
+// It handles database operations and UUID conversion for dog entities.
 type mssqlDogRepository struct {
 	conn Connection
 }
 
+// NewMSSQLDog returns a repository for dog operations using MSSQL.
+// It requires a valid database connection.
 func NewMSSQLDog(conn Connection) domain.DogRepository {
 	return &mssqlDogRepository{conn: conn}
 }
 
-// fetch is a helper function to retrieve multiple dog records
+// fetch is a helper function to retrieve multiple dog records based on the provided query.
+// It handles row scanning, UUID conversion, and proper resource cleanup.
+// The function returns the matched dogs or an error if the database operation fails.
 func (r *mssqlDogRepository) fetch(ctx context.Context, query string, args ...interface{}) ([]domain.Dog, error) {
 	rows, err := r.conn.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -58,7 +64,8 @@ func (r *mssqlDogRepository) fetch(ctx context.Context, query string, args ...in
 	return dogs, nil
 }
 
-// GetAll retrieves all dogs from the database
+// GetAll returns all dog records from the database.
+// It returns any database errors encountered.
 func (r *mssqlDogRepository) GetAll(ctx context.Context) ([]domain.Dog, error) {
 	query := `SELECT DogID, Name, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber, IsAdopted 
               FROM shelter.Dog`
@@ -66,7 +73,8 @@ func (r *mssqlDogRepository) GetAll(ctx context.Context) ([]domain.Dog, error) {
 	return r.fetch(ctx, query)
 }
 
-// GetAvailable retrieves all dogs that are available for adoption
+// GetAvailable returns all dogs available for adoption from the database.
+// It returns any database errors encountered.
 func (r *mssqlDogRepository) GetAvailable(ctx context.Context) ([]domain.Dog, error) {
 	query := `SELECT DogID, Name, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber, IsAdopted
               FROM shelter.AvailableDogs`
@@ -74,7 +82,8 @@ func (r *mssqlDogRepository) GetAvailable(ctx context.Context) ([]domain.Dog, er
 	return r.fetch(ctx, query)
 }
 
-// GetByID retrieves a specific dog by its unique identifier
+// GetByID returns a dog with the specified ID.
+// It returns domain.ErrNotFound if no matching dog exists.
 func (r *mssqlDogRepository) GetByID(ctx context.Context, dogID uuid.UUID) (*domain.Dog, error) {
 	query := `SELECT DogID, Name, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber, IsAdopted 
               FROM shelter.Dog 
@@ -108,7 +117,10 @@ func (r *mssqlDogRepository) GetByID(ctx context.Context, dogID uuid.UUID) (*dom
 	return &dog, nil
 }
 
-// Create inserts a new dog record into the database
+// Create inserts a new dog record into the database.
+// It generates a new UUID if dog.DogID is nil.
+// Returns domain.ErrDatabaseError if the insertion fails or domain.ErrInvalidInput
+// if required fields are missing.
 func (r *mssqlDogRepository) Create(ctx context.Context, dog *domain.Dog) error {
 	query := `INSERT INTO shelter.Dog
               (DogID, Name, IntakeDate, EstimatedBirthDate, Breed, Sex, Color, CageNumber, IsAdopted)
@@ -148,7 +160,11 @@ func (r *mssqlDogRepository) Create(ctx context.Context, dog *domain.Dog) error 
 	return nil
 }
 
-// Update modifies an existing dog record in the database
+// Update modifies an existing dog record in the database.
+// It requires all dog fields to be populated, even those that are not changing.
+// Returns domain.ErrInvalidInput if the dog ID is nil,
+// domain.ErrNotFound if no dog with the given ID exists, or
+// a wrapped database error if the update operation fails.
 func (r *mssqlDogRepository) Update(ctx context.Context, dog *domain.Dog) error {
 	query := `UPDATE shelter.Dog 
               SET Name = @p1, IntakeDate = @p2, EstimatedBirthDate = @p3, Breed = @p4,
@@ -187,7 +203,9 @@ func (r *mssqlDogRepository) Update(ctx context.Context, dog *domain.Dog) error 
 	return nil
 }
 
-// Delete removes a dog record from the database
+// Delete removes a dog record from the database by its UUID.
+// It returns domain.ErrInvalidInput if the dog ID is nil and
+// domain.ErrNotFound if no dog with the given ID exists.
 func (r *mssqlDogRepository) Delete(ctx context.Context, dogID uuid.UUID) error {
 	query := `DELETE FROM shelter.Dog
               WHERE DogID = @p1`
@@ -212,7 +230,10 @@ func (r *mssqlDogRepository) Delete(ctx context.Context, dogID uuid.UUID) error 
 	return nil
 }
 
-// MarkAsAdopted updates a dog's adoption status to adopted (IsAdopted = true)
+// MarkAsAdopted updates a dog's adoption status to adopted (IsAdopted = true).
+// This operation is typically called during the adoption process completion.
+// Returns domain.ErrNotFound if no dog with the given ID exists or
+// a wrapped database error if the update operation fails.
 func (r *mssqlDogRepository) MarkAsAdopted(ctx context.Context, dogID uuid.UUID) error {
 	query := `UPDATE shelter.Dog
               SET IsAdopted = 1
