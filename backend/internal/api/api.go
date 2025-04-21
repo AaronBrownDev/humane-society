@@ -58,12 +58,12 @@ func (a *api) Routes() http.Handler {
 	router.Get("/health", a.healthCheckHandler)
 
 	// Auth routes
-	//router.Route("/api/auth", func(r chi.Router) {
-	//	r.Post("/register", a.registerHandler)
-	//	r.Post("/login", a.loginHandler)
-	//	r.Post("/refresh", a.refreshTokenHandler)
-	//	r.Post("/logout", a.logoutHandler)
-	//})
+	router.Route("/api/auth", func(r chi.Router) {
+		r.Post("/register", a.registerHandler)
+		r.Post("/login", a.loginHandler)
+		r.Post("/refresh", a.refreshTokenHandler)
+		r.Post("/logout", a.logoutHandler)
+	})
 
 	// Dog routes
 	router.Route("/api/dogs", func(r chi.Router) {
