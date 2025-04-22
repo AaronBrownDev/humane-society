@@ -1,8 +1,0 @@
-# IDE specific files
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# Environment variables
-.env

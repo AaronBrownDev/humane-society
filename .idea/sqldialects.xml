@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SqlDialectMappings">
+    <file url="file://$PROJECT_DIR$/backend/migrations/mssql/000027_create_available_dogs_view.down.sql" dialect="TSQL" />
+    <file url="file://$PROJECT_DIR$/backend/migrations/mssql/000047_create_auth_schema.up.sql" dialect="TSQL" />
+    <file url="file://$PROJECT_DIR$/backend/migrations/mssql/000051_insert_default_roles.up.sql" dialect="TSQL" />
+    <file url="PROJECT" dialect="TSQL" />
+  </component>
+</project>

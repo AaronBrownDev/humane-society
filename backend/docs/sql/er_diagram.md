@@ -10,30 +10,31 @@ erDiagram
     UserAccount ||--o{ UserRole : "has"
     UserAccount ||--o{ RefreshToken : "has"
     Role ||--o{ UserRole : "assigned to"
-    
+    RefreshToken ||--o{ RefreshToken : "replaces"
+
     Dog ||--o{ DogPrescription : "receives"
     Medicine ||--o{ DogPrescription : "used in"
     Veterinarian ||--o{ DogPrescription : "prescribes"
-    
+
     ItemCatalog ||--o{ Supply : "categorizes"
-    
+
     PetOwner ||--o{ PetOwnerPet : "owns"
     Veterinarian ||--o{ PetOwner : "treats pets of"
-    
+
     PetSurrenderer ||--o{ SurrenderForm : "submits"
     Volunteer ||--o{ SurrenderForm : "processes"
     Veterinarian ||--o{ SurrenderForm : "provides history for"
     Dog ||--o{ SurrenderForm : "results from"
-    
+
     Adopter ||--o{ AdoptionForm : "submits"
     Dog ||--o{ AdoptionForm : "is subject of"
     Volunteer ||--o{ AdoptionForm : "processes"
-    
+
     Person ||--o{ VolunteerForm : "submits"
     Volunteer ||--o{ VolunteerForm : "processes"
-    
+
     Volunteer ||--o{ VolunteerSchedule : "is scheduled for"
-    
+
     Person {
         uuid PersonID PK
         string FirstName
@@ -44,14 +45,14 @@ erDiagram
         string EmailAddress
         string PhoneNumber
     }
-    
+
     Adopter {
         uuid AdopterID PK, FK
         bool HasPetAllergies
         bool HasSurrenderedPets
         string HomeStatus
     }
-    
+
     Volunteer {
         uuid VolunteerID PK, FK
         string VolunteerPosition
@@ -61,7 +62,7 @@ erDiagram
         string EmergencyContactPhone
         bool IsActive
     }
-    
+
     PetOwner {
         uuid PetOwnerID PK, FK
         uuid VeterinarianID FK
@@ -69,15 +70,15 @@ erDiagram
         bool HasVaccinatedPets
         bool UsesVetHeartWormPrevention
     }
-    
+
     PetSurrenderer {
         uuid SurrendererID PK, FK
     }
-    
+
     Veterinarian {
         uuid VeterinarianID PK, FK
     }
-    
+
     Dog {
         uuid DogID PK
         string Name
@@ -89,7 +90,7 @@ erDiagram
         int CageNumber
         bool IsAdopted
     }
-    
+
     Medicine {
         int MedicineID PK
         string Name
@@ -97,7 +98,7 @@ erDiagram
         string Description
         string DosageUnit
     }
-    
+
     DogPrescription {
         int PrescriptionID PK
         uuid DogID FK
@@ -109,7 +110,7 @@ erDiagram
         string Notes
         uuid VetPrescriberID FK
     }
-    
+
     ItemCatalog {
         uuid ItemID PK
         string Name
@@ -118,7 +119,7 @@ erDiagram
         int MinimumQuantity
         bool IsActive
     }
-    
+
     Supply {
         int SupplyID PK
         uuid ItemID FK
@@ -128,7 +129,7 @@ erDiagram
         string BatchNumber
         date AcquisitionDate
     }
-    
+
     PetOwnerPet {
         int PetID PK
         uuid PetOwnerID FK
@@ -139,7 +140,7 @@ erDiagram
         date OwnershipDate
         string LivingEnvironment
     }
-    
+
     SurrenderForm {
         int SurrenderFormID PK
         uuid SurrendererID FK
@@ -169,7 +170,7 @@ erDiagram
         uuid ResultingDogID FK
         string Status
     }
-    
+
     AdoptionForm {
         int AdoptionFormID PK
         uuid AdopterID FK
@@ -180,7 +181,7 @@ erDiagram
         string Status
         string RejectionReason
     }
-    
+
     VolunteerForm {
         int VolunteerFormID PK
         uuid ApplicantID FK
@@ -201,7 +202,7 @@ erDiagram
         string Status
         string RejectionReason
     }
-    
+
     VolunteerSchedule {
         int ScheduleID PK
         uuid VolunteerID FK
@@ -211,7 +212,7 @@ erDiagram
         string TaskDescription
         string Status
     }
-    
+
     UserAccount {
         uuid UserID PK, FK
         string PasswordHash
@@ -222,23 +223,22 @@ erDiagram
         datetime LockoutEnd
         datetime CreatedAt
     }
-    
+
     Role {
         int RoleID PK
         string Name
         string Description
     }
-    
+
     UserRole {
         uuid UserID PK, FK
         int RoleID PK, FK
         datetime AssignedAt
     }
-    
+
     RefreshToken {
         uuid TokenID PK
         uuid UserID FK
-        string Token
         datetime Expires
         datetime CreatedAt
         datetime RevokedAt
