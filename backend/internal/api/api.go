@@ -35,6 +35,8 @@ func NewAPI(db *sql.DB) *api {
 			repos.People,
 			repos.UserAccounts,
 			repos.RefreshTokens,
+			repos.Roles,
+			repos.UserRoles,
 			jwtSecret,
 			15,
 			7,
@@ -53,7 +55,7 @@ func (a *api) Routes() http.Handler {
 	router.Use(middleware.Timeout(30 * time.Second))
 	router.Use(middleware.RealIP)
 	router.Use(middleware.RequestID)
-
+	router.Use(corsMiddleware)
 	// Health check
 	router.Get("/health", a.healthCheckHandler)
 
@@ -124,4 +126,21 @@ func (a *api) respondJSON(w http.ResponseWriter, code int, payload interface{}) 
 
 func (a *api) respondError(w http.ResponseWriter, code int, message string) {
 	a.respondJSON(w, code, map[string]string{"error": message})
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+		// Handle preflight requests
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }

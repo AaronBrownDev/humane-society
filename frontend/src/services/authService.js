@@ -14,9 +14,12 @@ export const login = async (credentials) => {
 
 export const register = async (userData) => {
     try {
+        console.log('Sending registration data:', userData);
+
         const response = await api.post(`${AUTH_URL}/register`, userData);
         return response.data;
     } catch (error) {
+        console.error('Registration error:', error);
         throw error.response?.data?.error || 'Registration failed';
     }
 };

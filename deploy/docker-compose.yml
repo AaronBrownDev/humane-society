@@ -33,6 +33,7 @@ services:
       - DB_MAX_IDLE_CONNS=10
       - DB_CONN_MAX_LIFE_TIME=5
       - MIGRATION_DIR=/app/migrations/mssql
+      - JWT_SECRET=36c749e1a042c0e58f9ae999e167d9a0a80b213f3fcdeaed46fd9cf294cef676ede7fb5d1616472cb517a506e49b29de7794a6140ce2aaf5074b0b31aedbd7b8500460179301e30a76ef7cafc325cd18654ea45317bfb12730fb1807c63e4d5029ba3acd3a895d32c5103da87d491ae86f1510fe27f8ab34afd68d0f4bccf96a390102b827edae319f9873f1386d30909b3740f96b329ba97f6798de629570a36f275f3f7d39f6a19e81b55994b3405f4b43577353e6896fd5864e215d8a1c29bcebb0971456093adb34598f33d0eef4da2bd75bf3442f0690585014a95dc344f8e145a0bcffcf0996d63657c6e91fab5d81db7b034b2042fae5979892ff5eaf
     # I do not know why but depends on service healthy always fails even though database connection works fine with backend
     # depends_on:
     #   db:
