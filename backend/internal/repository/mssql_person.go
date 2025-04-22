@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/AaronBrownDev/HumaneSociety/internal/domain"
@@ -34,11 +35,13 @@ func (r *mssqlPersonRepository) fetch(ctx context.Context, query string, args ..
 	var people []domain.Person
 	for rows.Next() {
 		var person domain.Person
+		var birthDate sql.NullTime
+
 		err = rows.Scan(
 			&person.PersonID,
 			&person.FirstName,
 			&person.LastName,
-			&person.BirthDate,
+			&birthDate,
 			&person.PhysicalAddress,
 			&person.MailingAddress,
 			&person.EmailAddress,
@@ -46,6 +49,16 @@ func (r *mssqlPersonRepository) fetch(ctx context.Context, query string, args ..
 		)
 		if err != nil {
 			return nil, err
+		}
+
+		if birthDate.Valid {
+			person.BirthDate = birthDate.Time
+		}
+
+		// Convert UUID from SQL Server format to standard format
+		person.PersonID, err = SwapUUIDFormat(person.PersonID)
+		if err != nil {
+			return nil, fmt.Errorf("error converting PersonID UUID: %w", err)
 		}
 
 		people = append(people, person)
@@ -76,21 +89,34 @@ func (r *mssqlPersonRepository) GetByID(ctx context.Context, personID uuid.UUID)
               WHERE PersonID = @p1`
 
 	var person domain.Person
+	var birthDate sql.NullTime
+
 	err := r.conn.QueryRowContext(ctx, query, personID).Scan(
 		&person.PersonID,
 		&person.FirstName,
 		&person.LastName,
-		&person.BirthDate,
+		&birthDate,
 		&person.PhysicalAddress,
 		&person.MailingAddress,
 		&person.EmailAddress,
 		&person.PhoneNumber,
 	)
+
 	if err != nil {
-		if errors.Is(err, errors.New("sql: no rows in result set")) {
+		if err == sql.ErrNoRows {
 			return nil, domain.ErrNotFound
 		}
 		return nil, err
+	}
+
+	if birthDate.Valid {
+		person.BirthDate = birthDate.Time
+	}
+
+	// Convert UUID from SQL Server format to standard format
+	person.PersonID, err = SwapUUIDFormat(person.PersonID)
+	if err != nil {
+		return nil, fmt.Errorf("error converting PersonID UUID: %w", err)
 	}
 
 	return &person, nil
@@ -110,21 +136,35 @@ func (r *mssqlPersonRepository) GetByEmail(ctx context.Context, email string) (*
 	}
 
 	var person domain.Person
+	var birthDate sql.NullTime // Handle nullable birth date
+
 	err := r.conn.QueryRowContext(ctx, query, email).Scan(
 		&person.PersonID,
 		&person.FirstName,
 		&person.LastName,
-		&person.BirthDate,
+		&birthDate,
 		&person.PhysicalAddress,
 		&person.MailingAddress,
 		&person.EmailAddress,
 		&person.PhoneNumber,
 	)
+
 	if err != nil {
-		if errors.Is(err, errors.New("sql: no rows in result set")) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrNotFound
 		}
 		return nil, err
+	}
+
+	// Handle nullable birth date
+	if birthDate.Valid {
+		person.BirthDate = birthDate.Time
+	}
+
+	// Convert UUID from SQL Server format to standard format
+	person.PersonID, err = SwapUUIDFormat(person.PersonID)
+	if err != nil {
+		return nil, fmt.Errorf("error converting PersonID UUID: %w", err)
 	}
 
 	return &person, nil
@@ -145,13 +185,27 @@ func (r *mssqlPersonRepository) Create(ctx context.Context, person *domain.Perso
 		person.PersonID = uuid.New()
 	}
 
+	// Convert to SQL Server UUID format
+	sqlUUID, err := SwapUUIDFormat(person.PersonID)
+	if err != nil {
+		return fmt.Errorf("error converting UUID format: %w", err)
+	}
+
+	// Handle NULL birth date
+	var birthDate interface{}
+	if person.BirthDate.IsZero() {
+		birthDate = nil
+	} else {
+		birthDate = person.BirthDate
+	}
+
 	result, err := r.conn.ExecContext(
 		ctx,
 		query,
-		person.PersonID,
+		sqlUUID,
 		person.FirstName,
 		person.LastName,
-		person.BirthDate,
+		birthDate,
 		person.PhysicalAddress,
 		person.MailingAddress,
 		person.EmailAddress,
@@ -178,12 +232,25 @@ func (r *mssqlPersonRepository) Create(ctx context.Context, person *domain.Perso
 // or another error if the database operation fails.
 func (r *mssqlPersonRepository) Update(ctx context.Context, person *domain.Person) error {
 	query := `UPDATE people.Person
-              SET FirstName = @p1, LastName = @p2, BirthDate = @p3, PhysicalAddress = @p4,
-                  MailingAddress = @p5, EmailAddress = @p6, PhoneNumber = @p7
+              SET FirstName = @p1, 
+                  LastName = @p2, 
+                  BirthDate = @p3, 
+                  PhysicalAddress = @p4, 
+                  MailingAddress = @p5, 
+                  EmailAddress = @p6, 
+                  PhoneNumber = @p7
               WHERE PersonID = @p8`
 
 	if person.PersonID == uuid.Nil {
 		return domain.ErrInvalidInput
+	}
+
+	// Handle NULL birth date
+	var birthDate interface{}
+	if person.BirthDate.IsZero() {
+		birthDate = nil
+	} else {
+		birthDate = person.BirthDate
 	}
 
 	result, err := r.conn.ExecContext(
@@ -191,7 +258,7 @@ func (r *mssqlPersonRepository) Update(ctx context.Context, person *domain.Perso
 		query,
 		person.FirstName,
 		person.LastName,
-		person.BirthDate,
+		birthDate,
 		person.PhysicalAddress,
 		person.MailingAddress,
 		person.EmailAddress,

@@ -78,20 +78,12 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*AuthRespons
 	// Find the person by email address
 	s.logger.Printf("Attempting login for email: %s", req.Email)
 
-	person, err := s.personRepo.GetByEmail(ctx, req.Email)
+	// Use the UserAccountService to get the user account
+	userAccountService := NewUserAccountService(s.personRepo, s.userRepo)
+	userAccount, err := userAccountService.GetUserAccountByEmail(ctx, req.Email)
 	if err != nil {
-		s.logger.Printf("Error finding person by email %s: %v", req.Email, err)
+		s.logger.Printf("Error finding user account for email %s: %v", req.Email, err)
 		return nil, errors.New("invalid email")
-	}
-
-	// Log the personID for debugging
-	s.logger.Printf("Found person with ID: %s", person.PersonID.String())
-
-	// Find the user account by personID
-	userAccount, err := s.userRepo.GetByID(ctx, person.PersonID)
-	if err != nil {
-		s.logger.Printf("Error finding user account for personID %s: %v", person.PersonID.String(), err)
-		return nil, errors.New("no user account found")
 	}
 
 	if userAccount.IsLocked && userAccount.LockoutEnd.After(time.Now()) {
@@ -103,11 +95,11 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*AuthRespons
 	}
 
 	// Log password comparison attempt
-	s.logger.Printf("Comparing password hash for user: %s", person.EmailAddress)
+	s.logger.Printf("Comparing password hash for user with ID: %s", userAccount.UserID)
 
 	// if the password is incorrect
 	if err := bcrypt.CompareHashAndPassword([]byte(userAccount.PasswordHash), []byte(req.Password)); err != nil {
-		s.logger.Printf("Invalid password for user: %s, error: %v", person.EmailAddress, err)
+		s.logger.Printf("Invalid password for user: %s, error: %v", req.Email, err)
 
 		userAccount.FailedLoginAttempts++
 
@@ -135,7 +127,7 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*AuthRespons
 		// Continue anyway, this is not critical
 	}
 
-	s.logger.Printf("Login successful for user: %s", person.EmailAddress)
+	s.logger.Printf("Login successful for user: %s", req.Email)
 
 	accessToken, expiresAt, err := s.generateAccessToken(userAccount.UserID)
 	if err != nil {

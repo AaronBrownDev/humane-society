@@ -62,6 +62,12 @@ func (r *mssqlUserAccountRepository) GetAll(ctx context.Context) ([]domain.UserA
 			account.LockoutEnd = lockoutEnd.Time
 		}
 
+		// Convert UUID from SQL Server format to standard format
+		account.UserID, err = SwapUUIDFormat(account.UserID)
+		if err != nil {
+			return nil, fmt.Errorf("error converting UserID UUID: %w", err)
+		}
+
 		accounts = append(accounts, account)
 	}
 
@@ -165,7 +171,13 @@ func (r *mssqlUserAccountRepository) Update(ctx context.Context, userAccount dom
 		lockoutEnd = sql.NullTime{Time: userAccount.LockoutEnd, Valid: true}
 	}
 
-	_, err := r.conn.ExecContext(
+	// Convert UUID to SQL Server format before updating
+	sqlUserID, err := SwapUUIDFormat(userAccount.UserID)
+	if err != nil {
+		return domain.UserAccount{}, fmt.Errorf("error converting UserID UUID: %w", err)
+	}
+
+	_, err = r.conn.ExecContext(
 		ctx,
 		query,
 		userAccount.PasswordHash,
@@ -174,7 +186,7 @@ func (r *mssqlUserAccountRepository) Update(ctx context.Context, userAccount dom
 		userAccount.FailedLoginAttempts,
 		userAccount.IsLocked,
 		lockoutEnd,
-		userAccount.UserID,
+		sqlUserID, // Use the converted UUID
 	)
 	if err != nil {
 		return domain.UserAccount{}, fmt.Errorf("error updating user account: %w", err)
@@ -190,7 +202,13 @@ func (r *mssqlUserAccountRepository) Update(ctx context.Context, userAccount dom
 func (r *mssqlUserAccountRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	query := `DELETE FROM auth.UserAccount WHERE UserID = @p1`
 
-	result, err := r.conn.ExecContext(ctx, query, id)
+	// Convert UUID to SQL Server format before deleting
+	sqlID, err := SwapUUIDFormat(id)
+	if err != nil {
+		return fmt.Errorf("error converting UUID format: %w", err)
+	}
+
+	result, err := r.conn.ExecContext(ctx, query, sqlID)
 	if err != nil {
 		return fmt.Errorf("error deleting user account: %w", err)
 	}
