@@ -16,17 +16,21 @@ type AuthService struct {
 	personRepo        domain.PersonRepository
 	userRepo          domain.UserAccountRepository
 	refreshTokenRepo  domain.RefreshTokenRepository
+	roleRepo          domain.RoleRepository
+	userRoleRepo      domain.UserRoleRepository
 	jwtSecret         []byte
 	jwtExpiryMinutes  int
 	refreshExpiryDays int
 }
 
 // NewAuthService initializes and returns a new instance of AuthService with the provided repositories and configuration.
-func NewAuthService(personRepo domain.PersonRepository, userRepo domain.UserAccountRepository, refreshTokenRepo domain.RefreshTokenRepository, jwtSecret []byte, jwtExpiryMinutes int, refreshExpiryDays int) *AuthService {
+func NewAuthService(personRepo domain.PersonRepository, userRepo domain.UserAccountRepository, refreshTokenRepo domain.RefreshTokenRepository, roleRepo domain.RoleRepository, userRoleRepo domain.UserRoleRepository, jwtSecret []byte, jwtExpiryMinutes int, refreshExpiryDays int) *AuthService {
 	return &AuthService{
 		personRepo:        personRepo,
 		userRepo:          userRepo,
 		refreshTokenRepo:  refreshTokenRepo,
+		roleRepo:          roleRepo,
+		userRoleRepo:      userRoleRepo,
 		jwtSecret:         jwtSecret,
 		jwtExpiryMinutes:  jwtExpiryMinutes,
 		refreshExpiryDays: refreshExpiryDays,
@@ -231,12 +235,20 @@ func (s *AuthService) RevokeToken(ctx context.Context, tokenID uuid.UUID) error 
 
 // generateAccessToken creates a new JWT access token for the provided userID, returning the token, its expiration, or an error.
 func (s *AuthService) generateAccessToken(userID uuid.UUID) (string, time.Time, error) {
+
+	roleService := NewRoleService(s.roleRepo, s.userRoleRepo)
+	roleName, err := roleService.GetRoleName(context.Background(), userID)
+	if err != nil {
+		roleName = "User" // Default role
+	}
+
 	expirationTime := time.Now().Add(time.Minute * time.Duration(s.jwtExpiryMinutes))
 
 	claims := jwt.MapClaims{
-		"sub": userID.String(),
-		"exp": expirationTime.Unix(),
-		"iat": time.Now().Unix(),
+		"sub":  userID.String(),
+		"role": roleName,
+		"exp":  expirationTime.Unix(),
+		"iat":  time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

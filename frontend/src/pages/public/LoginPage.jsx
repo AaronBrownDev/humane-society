@@ -1,38 +1,34 @@
-import React from "react";
-import useAuth from "../../hooks/useAuth.js";
-import  "../../styles/Login.css";
-
-import { NavLink,useNavigate, useLocation } from "react-router-dom";
-
-
+import React, { useState, useRef, useEffect } from "react";
+import { useNavigate, useLocation, NavLink } from "react-router-dom";
+import useAuth from "../../hooks/useAuth";
+import "../../styles/Login.css";
 
 export default function LoginPage() {
-
-    const {setAuth} = useAuth;
+    const { login } = useAuth();
 
     const navigate = useNavigate();
     const location = useLocation();
     const from = location.state?.from?.pathname || "/";
 
-    const userRef = React.useRef();
-    const errRef = React.useRef();
+    const userRef = useRef();
+    const errRef = useRef();
 
-    const [email, setEmail]= React.useState('');
-    const [password,setPassword] =React.useState('')
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [errMsg, setErrMsg] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
 
-    const [isLoading, setIsLoading]= React.useState('');
-    const [errMsg, setErrMsg] =React.useState('');
-    const [successMessage, setSuccessMessage]= React.useState('');
+    useEffect(() => {
+        userRef.current?.focus();
+    }, []);
 
-    React.useEffect(() => {
-        userRef.current.focus();
-        },[])
-
-    React.useEffect(() =>{
+    useEffect(() => {
         setErrMsg('');
-        },[email,password])
+    }, [email, password]);
 
-    const handleSubmit = async () => {
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
         // Reset messages
         setErrMsg('');
@@ -47,98 +43,78 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            // Change to user endpoint
-            const response = await fetch('https://api.example.com/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email,
-                    password,
-                }),
-            });
+            const result = await login(email, password);
 
-            const accessToken = response?.data?.accessToken;
-            const roles = response?.data.roles;
+            if (result.success) {
+                setSuccessMessage('Login successful!');
 
-            setAuth({email, password,roles,accessToken});
-            setEmail('');
-            setPassword('');
-            navigate(from, {replace: true});
-
-            {/**setTimeout(() => {
-                window.location.href = '/dashboard';
-            }, 1500);*/}
-
-         } catch (error) {
-            if (!error?.response) {
-                setErrMsg('No Server Response');
-            } else if (error.response?.status === 400) {
-                setErrMsg('Missing Username or Password');
-            } else if (error.response?.status === 401) {
-                setErrMsg('Unauthorized');
+                // Small delay for better UX before redirect
+                setTimeout(() => {
+                    navigate(from, { replace: true });
+                }, 500);
             } else {
-                setErrMsg('Login Failed');
+                setErrMsg(result.error);
+                errRef.current?.focus();
             }
-            errRef.current.focus();
+        } catch (error) {
+            setErrMsg('Login failed. Please try again.');
+            errRef.current?.focus();
+        } finally {
+            setIsLoading(false);
         }
-    }
-        return (
-            <div className='loginContainer'>
-                <section className='loginForm'>
-                    <p ref={errRef} className={errMsg ? "errmsg" :
-                        "offscreen"} aria-live="assertive">{errMsg}</p>
-                    <h1> Log In</h1>
-                    {errMsg && (
-                        <div className="error-message">
-                            {errMsg}
-                        </div>
-                    )}
+    };
 
-                    {successMessage && (
-                        <div className="success-message">
-                            {successMessage}
-                        </div>
-                    )}
-                    <form action={handleSubmit}>
-                        <label htmlFor="email"> Email</label>
-                        <input
-                            type="email"
-                            id="username"
-                            ref={userRef}
-                            autoComplete="off"
-                            onChange={(e) => setEmail(e.target.value)}
-                            value={email}
-                            required
-                        />
-                        <label htmlFor="password">Password</label>
-                        <input
-                            type="password"
-                            id="password"
-                            autoComplete="off"
-                            onChange={(e) => setPassword(e.target.value)}
-                            value={password}
-                            required
-                        />
-                        <button
-                            type="submit"
-                            className="login-button"
-                            disabled={isLoading}
-                        >
-                            {isLoading ? 'Signing in...' : 'Sign In'}
-                        </button>
-                    </form>
-                    <p>
-                        Need an Account?<br/>
-                        <span className='line'>
-                        <NavLink to ="/Registration"> Register Me </NavLink>
-                    </span>
+    return (
+        <div className='loginContainer'>
+            <section className='loginForm'>
+                <p ref={errRef} className={errMsg ? "errmsg" : "offscreen"} aria-live="assertive">
+                    {errMsg}
+                </p>
+                <h1>Log In</h1>
 
-                    </p>
+                {successMessage && (
+                    <div className="success-message">
+                        {successMessage}
+                    </div>
+                )}
 
-                </section>
-            </div>
+                <form onSubmit={handleSubmit}>
+                    <label htmlFor="email">Email</label>
+                    <input
+                        type="email"
+                        id="email"
+                        ref={userRef}
+                        autoComplete="off"
+                        onChange={(e) => setEmail(e.target.value)}
+                        value={email}
+                        required
+                    />
 
-        )
-    }
+                    <label htmlFor="password">Password</label>
+                    <input
+                        type="password"
+                        id="password"
+                        onChange={(e) => setPassword(e.target.value)}
+                        value={password}
+                        required
+                    />
+
+                    <button
+                        type="submit"
+                        className="login-button"
+                        disabled={isLoading}
+                    >
+                        {isLoading ? 'Signing in...' : 'Sign In'}
+                    </button>
+                </form>
+
+                <p>
+                    Need an Account?<br/>
+                    <span className='line'>
+            <NavLink to="/Registration">Register Me</NavLink>
+          </span>
+                </p>
+            </section>
+        </div>
+    );
+}

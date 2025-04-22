@@ -1,19 +1,25 @@
-import React, {useState} from 'react'
-import "../../styles/Registration.css"
-import {NavLink} from "react-router-dom";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import useAuth from "../../hooks/useAuth";
+import "../../styles/Registration.css";
 
 export default function Registration() {
+    const { register } = useAuth();
+    const navigate = useNavigate();
+
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
         email: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        physicalAddress: '',
+        mailingAddress: ''
     });
 
     // UI state
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState({});
+    const [errors, setErrors] = useState({});
     const [apiError, setApiError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
 
@@ -26,9 +32,9 @@ export default function Registration() {
         });
 
         // Clear specific field error when user types
-        if (error[name]) {
-            setError({
-                ...error,
+        if (errors[name]) {
+            setErrors({
+                ...errors,
                 [name]: ''
             });
         }
@@ -55,6 +61,15 @@ export default function Registration() {
             newErrors.email = 'Email is invalid';
         }
 
+        // Validate addresses
+        if (!formData.physicalAddress.trim()) {
+            newErrors.physicalAddress = 'Physical address is required';
+        }
+
+        if (!formData.mailingAddress.trim()) {
+            newErrors.mailingAddress = 'Mailing address is required';
+        }
+
         // Validate password
         if (!formData.password) {
             newErrors.password = 'Password is required';
@@ -74,7 +89,7 @@ export default function Registration() {
 
     // Handle form submission
     const handleSubmit = async (e) => {
-
+        e.preventDefault();
 
         // Reset messages
         setApiError('');
@@ -83,7 +98,7 @@ export default function Registration() {
         // Validate form
         const formErrors = validateForm();
         if (Object.keys(formErrors).length > 0) {
-            setError(formErrors);
+            setErrors(formErrors);
             return;
         }
 
@@ -91,58 +106,55 @@ export default function Registration() {
         setIsLoading(true);
 
         try {
-            // Make API request to registration endpoint
-            const response = await fetch('https://api.example.com/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    firstName: formData.firstName,
-                    lastName: formData.lastName,
-                    email: formData.email,
-                    password: formData.password
-                }),
-            });
+            // Format data for API
+            const userData = {
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                emailAddress: formData.email,
+                password: formData.password,
+                physicalAddress: formData.physicalAddress,
+                mailingAddress: formData.mailingAddress,
+                // Set optional fields
+                birthDate: null,
+                phoneNumber: ''
+            };
 
-            const data = await response.json();
+            const result = await register(userData);
 
-            if (!response.ok) {
-                // Handle error response from server
-                throw new Error(data.message || 'Registration failed');
+            if (result.success) {
+                // Show success message
+                setSuccessMessage('Registration successful! You can now log in.');
+
+                // Clear form
+                setFormData({
+                    firstName: '',
+                    lastName: '',
+                    email: '',
+                    password: '',
+                    confirmPassword: '',
+                    physicalAddress: '',
+                    mailingAddress: ''
+                });
+
+                // Redirect to login page after delay
+                setTimeout(() => {
+                    navigate('/LoginPage');
+                }, 2000);
+            } else {
+                setApiError(result.error);
             }
-
-            // Show success message
-            setSuccessMessage('Registration successful! You can now log in.');
-
-            // Clear form
-            setFormData({
-                firstName: '',
-                lastName: '',
-                email: '',
-                password: '',
-                confirmPassword: ''
-            });
-
-            // Optional: Redirect to login page after delay
-            setTimeout(() => {
-                window.location.href = '/login';
-            }, 3000);
-
         } catch (error) {
-            console.log(error.message || 'An error occurred during registration');
-
+            setApiError(error.message || 'An error occurred during registration');
         } finally {
             setIsLoading(false);
         }
     };
 
-
-
     return (
         <div className="registrationContainer">
-            <div className="formconcontainer">
-                <h2> Registration</h2>
+            <div className="formContainer">
+                <h2>Registration</h2>
+
                 {apiError && (
                     <div className="error-message">
                         {apiError}
@@ -154,47 +166,98 @@ export default function Registration() {
                         {successMessage}
                     </div>
                 )}
-                <form action={handleSubmit}>
-                    <label htmlFor="first_name">First Name</label>
-                    <input
-                        type="text"
-                        id="first_name"
-                        name="first_name"
-                        placeholder="First Name"
-                        onChange={handleChange}
-                    />
-                    <label htmlFor="last_name">Last Name</label>
-                    <input
-                        type="text"
-                        id="last_name"
-                        name="last_name"
-                        placeholder="Last Name"
-                        onChange={handleChange}
-                    />
-                    <label htmlFor="email">Email</label>
-                    <input
-                        type = "email"
-                        id='email'
-                        name = "email"
-                        placeholder="Email"
-                        onChange={handleChange}
-                    />
-                    <label htmlFor="password">Password</label>
-                    <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        placeholder="Password"
-                        onChange={handleChange}
+
+                <form onSubmit={handleSubmit}>
+                    <div className="form-group">
+                        <label htmlFor="firstName">First Name</label>
+                        <input
+                            type="text"
+                            id="firstName"
+                            name="firstName"
+                            value={formData.firstName}
+                            onChange={handleChange}
+                            className={errors.firstName ? 'error' : ''}
                         />
-                    <label htmlFor="confirmPassword">Confirm Password</label>
-                    <input
-                        type="password"
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        placeholder="Confirm Password"
-                        onChange={handleChange}
-                    />
+                        {errors.firstName && <div className="error-text">{errors.firstName}</div>}
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="lastName">Last Name</label>
+                        <input
+                            type="text"
+                            id="lastName"
+                            name="lastName"
+                            value={formData.lastName}
+                            onChange={handleChange}
+                            className={errors.lastName ? 'error' : ''}
+                        />
+                        {errors.lastName && <div className="error-text">{errors.lastName}</div>}
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="email">Email</label>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            className={errors.email ? 'error' : ''}
+                        />
+                        {errors.email && <div className="error-text">{errors.email}</div>}
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="physicalAddress">Physical Address</label>
+                        <input
+                            type="text"
+                            id="physicalAddress"
+                            name="physicalAddress"
+                            value={formData.physicalAddress}
+                            onChange={handleChange}
+                            className={errors.physicalAddress ? 'error' : ''}
+                        />
+                        {errors.physicalAddress && <div className="error-text">{errors.physicalAddress}</div>}
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="mailingAddress">Mailing Address</label>
+                        <input
+                            type="text"
+                            id="mailingAddress"
+                            name="mailingAddress"
+                            value={formData.mailingAddress}
+                            onChange={handleChange}
+                            className={errors.mailingAddress ? 'error' : ''}
+                        />
+                        {errors.mailingAddress && <div className="error-text">{errors.mailingAddress}</div>}
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="password">Password</label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            className={errors.password ? 'error' : ''}
+                        />
+                        {errors.password && <div className="error-text">{errors.password}</div>}
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="confirmPassword">Confirm Password</label>
+                        <input
+                            type="password"
+                            id="confirmPassword"
+                            name="confirmPassword"
+                            value={formData.confirmPassword}
+                            onChange={handleChange}
+                            className={errors.confirmPassword ? 'error' : ''}
+                        />
+                        {errors.confirmPassword && <div className="error-text">{errors.confirmPassword}</div>}
+                    </div>
 
                     <button
                         type="submit"
@@ -203,12 +266,8 @@ export default function Registration() {
                     >
                         {isLoading ? 'Creating Account...' : 'Create Account'}
                     </button>
-
-
                 </form>
             </div>
-
         </div>
-
-    )
+    );
 }

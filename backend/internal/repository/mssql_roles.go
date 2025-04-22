@@ -87,6 +87,31 @@ func (r *mssqlRoleRepository) GetByID(ctx context.Context, id int) (*domain.Role
 	return &role, nil
 }
 
+// GetByName retrieves a role with the specified name.
+// Returns a pointer to the role if found, domain.ErrNotFound if no matching role exists,
+// or another error if the database operation fails.
+func (r *mssqlRoleRepository) GetByName(ctx context.Context, name string) (*domain.Role, error) {
+	query := `SELECT RoleID, Name, Description 
+              FROM auth.Role 
+              WHERE Name = @p1`
+
+	var role domain.Role
+	err := r.conn.QueryRowContext(ctx, query, name).Scan(
+		&role.RoleID,
+		&role.Name,
+		&role.Description,
+	)
+
+	if err != nil {
+		if errors.Is(err, errors.New("sql: no rows in result set")) {
+			return nil, domain.ErrNotFound
+		}
+		return nil, err
+	}
+
+	return &role, nil
+}
+
 // Create inserts a new role record into the database.
 // Returns the created role (with generated ID) or an error if the database operation fails.
 // Returns domain.ErrConflict if a role with the same name already exists.

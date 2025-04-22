@@ -1,16 +1,21 @@
-import {useLocation, Navigate, Outlet} from "react-router-dom";
-import useAuth from "../hooks/useAuth.js"
+// frontend/src/routes/ProtectedRoute.jsx - Update your existing file
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import useAuth from "../hooks/useAuth";
 
-export default function ProtectedRoute ({allowedRoles}) {
-    const {auth} = useAuth();
+export default function ProtectedRoute() {
+    const { auth, loading } = useAuth();
     const location = useLocation();
 
+    // If still loading auth state, show nothing or a loading spinner
+    if (loading) {
+        return <div>Loading...</div>;
+    }
 
-    return (
-        auth?.roles?.find(roles => allowedRoles?.includes(roles))
-            ? <Outlet/>
-            : auth?.user
-                ? <Navigate to="/" state={{from: location}} replace/>
-                : <Navigate to="/Login" state={{from: location}} replace/>
-    )
+    // If not authenticated, redirect to login
+    if (!auth.isAuthenticated) {
+        return <Navigate to="/LoginPage" state={{ from: location }} replace />;
+    }
+
+    // If authenticated, render the child routes
+    return <Outlet />;
 }

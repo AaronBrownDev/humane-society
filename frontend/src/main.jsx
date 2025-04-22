@@ -1,21 +1,15 @@
-import {createRoot} from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
+import { AuthProvider } from './context/AuthProvider';
 import './index.css';
-import AuthProvider from '/src/context/AuthProvider';
-import {BrowserRouter, Route, Routes} from "react-router-dom";
-
 
 const root = createRoot(document.getElementById("root"));
 
 root.render(
-    <AuthProvider>
-        <BrowserRouter>
-            <Routes>
-                <Route path="/*" element={<App/>}/>
-            </Routes>
-        </BrowserRouter>
-
-    </AuthProvider>
-
-   )
-
+    <BrowserRouter>
+        <AuthProvider>
+            <App />
+        </AuthProvider>
+    </BrowserRouter>
+);

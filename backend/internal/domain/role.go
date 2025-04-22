@@ -14,6 +14,7 @@ type Role struct {
 type RoleRepository interface {
 	GetAll(ctx context.Context) ([]Role, error)
 	GetByID(ctx context.Context, id int) (*Role, error)
+	GetByName(ctx context.Context, name string) (*Role, error)
 	Create(ctx context.Context, role *Role) (*Role, error)
 	Update(ctx context.Context, role *Role) (*Role, error)
 	Delete(ctx context.Context, id int) error
