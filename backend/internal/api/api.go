@@ -99,7 +99,10 @@ func (a *api) Routes() http.Handler {
 	})
 
 	// TODO: finish the routes
-	//router.Route("/api/", func(r chi.Router) {})
+	// User account routes
+	router.Route("/api/users", func(r chi.Router) {
+		r.Get("/", a.getAllUserAccountsHandler)
+	})
 
 	return router
 }
