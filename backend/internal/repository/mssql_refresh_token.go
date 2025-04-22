@@ -45,17 +45,6 @@ func (r *mssqlRefreshTokenRepository) GetAll(ctx context.Context) ([]domain.Refr
 			return nil, err
 		}
 
-		// Convert UUIDs from SQL Server format to standard UUID format
-		token.TokenID, err = SwapUUIDFormat(token.TokenID)
-		if err != nil {
-			return nil, fmt.Errorf("error converting TokenID UUID: %w", err)
-		}
-
-		token.UserID, err = SwapUUIDFormat(token.UserID)
-		if err != nil {
-			return nil, fmt.Errorf("error converting UserID UUID: %w", err)
-		}
-
 		if revokedAt.Valid {
 			token.RevokedAt = revokedAt.Time
 		}
@@ -65,13 +54,6 @@ func (r *mssqlRefreshTokenRepository) GetAll(ctx context.Context) ([]domain.Refr
 			if err != nil {
 				return nil, err
 			}
-
-			// Convert ReplacedByTokenID from SQL Server format to standard UUID format
-			replacedID, err = SwapUUIDFormat(replacedID)
-			if err != nil {
-				return nil, fmt.Errorf("error converting ReplacedByTokenID UUID: %w", err)
-			}
-
 			token.ReplacedByTokenID = replacedID
 		}
 
@@ -82,11 +64,8 @@ func (r *mssqlRefreshTokenRepository) GetAll(ctx context.Context) ([]domain.Refr
 }
 
 func (r *mssqlRefreshTokenRepository) GetByTokenID(ctx context.Context, tokenID uuid.UUID) (*domain.RefreshToken, error) {
-	// Convert tokenID to SQL Server format for query
-	sqlTokenID, err := SwapUUIDFormat(tokenID)
-	if err != nil {
-		return nil, fmt.Errorf("error converting TokenID UUID: %w", err)
-	}
+	// Debug logging
+	fmt.Printf("GetByTokenID called with token ID: %s\n", tokenID.String())
 
 	query := `SELECT TokenID, UserID, Expires, CreatedAt, RevokedAt, ReplacedByTokenID
               FROM auth.RefreshToken 
@@ -96,7 +75,8 @@ func (r *mssqlRefreshTokenRepository) GetByTokenID(ctx context.Context, tokenID 
 	var revokedAt sql.NullTime
 	var replacedBy sql.NullString
 
-	err = r.conn.QueryRowContext(ctx, query, sqlTokenID).Scan(
+	// Use tokenID directly without conversion
+	err := r.conn.QueryRowContext(ctx, query, tokenID).Scan(
 		&token.TokenID,
 		&token.UserID,
 		&token.Expires,
@@ -112,17 +92,6 @@ func (r *mssqlRefreshTokenRepository) GetByTokenID(ctx context.Context, tokenID 
 		return nil, err
 	}
 
-	// Convert UUIDs from SQL Server format to standard UUID format
-	token.TokenID, err = SwapUUIDFormat(token.TokenID)
-	if err != nil {
-		return nil, fmt.Errorf("error converting TokenID UUID: %w", err)
-	}
-
-	token.UserID, err = SwapUUIDFormat(token.UserID)
-	if err != nil {
-		return nil, fmt.Errorf("error converting UserID UUID: %w", err)
-	}
-
 	if revokedAt.Valid {
 		token.RevokedAt = revokedAt.Time
 	}
@@ -132,13 +101,6 @@ func (r *mssqlRefreshTokenRepository) GetByTokenID(ctx context.Context, tokenID 
 		if err != nil {
 			return nil, err
 		}
-
-		// Convert ReplacedByTokenID from SQL Server format to standard UUID format
-		replacedID, err = SwapUUIDFormat(replacedID)
-		if err != nil {
-			return nil, fmt.Errorf("error converting ReplacedByTokenID UUID: %w", err)
-		}
-
 		token.ReplacedByTokenID = replacedID
 	}
 
@@ -146,11 +108,8 @@ func (r *mssqlRefreshTokenRepository) GetByTokenID(ctx context.Context, tokenID 
 }
 
 func (r *mssqlRefreshTokenRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (*domain.RefreshToken, error) {
-	// Convert userID to SQL Server format for query
-	sqlUserID, err := SwapUUIDFormat(userID)
-	if err != nil {
-		return nil, fmt.Errorf("error converting UserID UUID: %w", err)
-	}
+	// Debug logging
+	fmt.Printf("GetByUserID called with user ID: %s\n", userID.String())
 
 	// Get the latest non-revoked token for this user
 	query := `SELECT TokenID, UserID, Expires, CreatedAt, RevokedAt, ReplacedByTokenID
@@ -162,7 +121,8 @@ func (r *mssqlRefreshTokenRepository) GetByUserID(ctx context.Context, userID uu
 	var revokedAt sql.NullTime
 	var replacedBy sql.NullString
 
-	err = r.conn.QueryRowContext(ctx, query, sqlUserID).Scan(
+	// Use userID directly without conversion
+	err := r.conn.QueryRowContext(ctx, query, userID).Scan(
 		&token.TokenID,
 		&token.UserID,
 		&token.Expires,
@@ -178,17 +138,6 @@ func (r *mssqlRefreshTokenRepository) GetByUserID(ctx context.Context, userID uu
 		return nil, err
 	}
 
-	// Convert UUIDs from SQL Server format to standard UUID format
-	token.TokenID, err = SwapUUIDFormat(token.TokenID)
-	if err != nil {
-		return nil, fmt.Errorf("error converting TokenID UUID: %w", err)
-	}
-
-	token.UserID, err = SwapUUIDFormat(token.UserID)
-	if err != nil {
-		return nil, fmt.Errorf("error converting UserID UUID: %w", err)
-	}
-
 	if revokedAt.Valid {
 		token.RevokedAt = revokedAt.Time
 	}
@@ -198,13 +147,6 @@ func (r *mssqlRefreshTokenRepository) GetByUserID(ctx context.Context, userID uu
 		if err != nil {
 			return nil, err
 		}
-
-		// Convert ReplacedByTokenID from SQL Server format to standard UUID format
-		replacedID, err = SwapUUIDFormat(replacedID)
-		if err != nil {
-			return nil, fmt.Errorf("error converting ReplacedByTokenID UUID: %w", err)
-		}
-
 		token.ReplacedByTokenID = replacedID
 	}
 
@@ -215,22 +157,16 @@ func (r *mssqlRefreshTokenRepository) Create(ctx context.Context, token *domain.
 	query := `INSERT INTO auth.RefreshToken (TokenID, UserID, Expires, CreatedAt)
               VALUES (@p1, @p2, @p3, @p4)`
 
-	// Convert UUIDs to SQL Server format for insertion
-	sqlTokenID, err := SwapUUIDFormat(token.TokenID)
-	if err != nil {
-		return fmt.Errorf("error converting TokenID UUID: %w", err)
-	}
+	// Debug logging
+	fmt.Printf("Creating refresh token - TokenID: %s, UserID: %s\n",
+		token.TokenID.String(), token.UserID.String())
 
-	sqlUserID, err := SwapUUIDFormat(token.UserID)
-	if err != nil {
-		return fmt.Errorf("error converting UserID UUID: %w", err)
-	}
-
-	_, err = r.conn.ExecContext(
+	// Use UUIDs directly without conversion
+	_, err := r.conn.ExecContext(
 		ctx,
 		query,
-		sqlTokenID, // Use converted TokenID
-		sqlUserID,  // Use converted UserID
+		token.TokenID,
+		token.UserID,
 		token.Expires,
 		token.CreatedAt,
 	)
@@ -246,10 +182,10 @@ func (r *mssqlRefreshTokenRepository) Update(ctx context.Context, token *domain.
               SET RevokedAt = @p1, ReplacedByTokenID = @p2
               WHERE TokenID = @p3`
 
-	// Convert UUIDs to SQL Server format for query
-	sqlTokenID, err := SwapUUIDFormat(token.TokenID)
-	if err != nil {
-		return nil, fmt.Errorf("error converting TokenID UUID: %w", err)
+	// Debug logging
+	fmt.Printf("Updating token ID: %s\n", token.TokenID.String())
+	if token.ReplacedByTokenID != uuid.Nil {
+		fmt.Printf("Replaced by token ID: %s\n", token.ReplacedByTokenID.String())
 	}
 
 	var revokedAt sql.NullTime
@@ -260,20 +196,16 @@ func (r *mssqlRefreshTokenRepository) Update(ctx context.Context, token *domain.
 	}
 
 	if token.ReplacedByTokenID != uuid.Nil {
-		// Convert ReplacedByTokenID to SQL Server format
-		sqlReplacedID, err := SwapUUIDFormat(token.ReplacedByTokenID)
-		if err != nil {
-			return nil, fmt.Errorf("error converting ReplacedByTokenID UUID: %w", err)
-		}
-		replacedBy = sql.NullString{String: sqlReplacedID.String(), Valid: true}
+		replacedBy = sql.NullString{String: token.ReplacedByTokenID.String(), Valid: true}
 	}
 
-	_, err = r.conn.ExecContext(
+	// Use token ID directly without conversion
+	_, err := r.conn.ExecContext(
 		ctx,
 		query,
 		revokedAt,
 		replacedBy,
-		sqlTokenID,
+		token.TokenID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error updating refresh token: %w", err)
@@ -285,13 +217,11 @@ func (r *mssqlRefreshTokenRepository) Update(ctx context.Context, token *domain.
 func (r *mssqlRefreshTokenRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	query := `DELETE FROM auth.RefreshToken WHERE TokenID = @p1`
 
-	// Convert TokenID to SQL Server format for query
-	sqlTokenID, err := SwapUUIDFormat(id)
-	if err != nil {
-		return fmt.Errorf("error converting TokenID UUID: %w", err)
-	}
+	// Debug logging
+	fmt.Printf("Deleting token ID: %s\n", id.String())
 
-	result, err := r.conn.ExecContext(ctx, query, sqlTokenID)
+	// Use ID directly without conversion
+	result, err := r.conn.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("error deleting refresh token: %w", err)
 	}

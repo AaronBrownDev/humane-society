@@ -4,11 +4,10 @@ import useAuth from "../../hooks/useAuth";
 import "../../styles/Login.css";
 
 export default function LoginPage() {
-    const { login } = useAuth();
-
+    const { auth, login } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
-    const from = location.state?.from?.pathname || "/";
+    const from = location.state?.from?.pathname || "/Adopt"; // Default to Adopt if no redirect location
 
     const userRef = useRef();
     const errRef = useRef();
@@ -18,6 +17,14 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [errMsg, setErrMsg] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+
+    // Check if already logged in
+    useEffect(() => {
+        if (auth?.isAuthenticated) {
+            console.log("Already authenticated, redirecting to:", from);
+            navigate(from, { replace: true });
+        }
+    }, [auth, navigate, from]);
 
     useEffect(() => {
         userRef.current?.focus();
@@ -29,6 +36,7 @@ export default function LoginPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log("Form submitted");
 
         // Reset messages
         setErrMsg('');
@@ -43,20 +51,27 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
+            console.log("Calling login function with email:", email);
             const result = await login(email, password);
+            console.log("Login result:", result);
 
             if (result.success) {
+                console.log("Login successful, preparing to redirect to:", from);
                 setSuccessMessage('Login successful!');
 
                 // Small delay for better UX before redirect
                 setTimeout(() => {
+                    console.log("Navigating to:", from);
                     navigate(from, { replace: true });
-                }, 500);
+                    console.log("Navigation function called");
+                }, 1000);
             } else {
+                console.error("Login failed with error:", result.error);
                 setErrMsg(result.error);
                 errRef.current?.focus();
             }
         } catch (error) {
+            console.error("Exception during login:", error);
             setErrMsg('Login failed. Please try again.');
             errRef.current?.focus();
         } finally {
@@ -111,8 +126,8 @@ export default function LoginPage() {
                 <p>
                     Need an Account?<br/>
                     <span className='line'>
-            <NavLink to="/Registration">Register Me</NavLink>
-          </span>
+                        <NavLink to="/Registration">Register Me</NavLink>
+                    </span>
                 </p>
             </section>
         </div>

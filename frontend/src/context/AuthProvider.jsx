@@ -59,16 +59,16 @@ export const AuthProvider = ({ children }) => {
             console.log("Login attempt for:", email);
 
             const response = await authService.login({ email, password });
-            console.log("Login successful:", response);
+            console.log("Login successful, response data:", response);
 
             // Store token in localStorage
             localStorage.setItem('accessToken', response.accessToken);
 
-            // Update auth state
+            // Update auth state with proper case and ensure isAuthenticated is set
             setAuth({
                 accessToken: response.accessToken,
                 userId: response.userId,
-                isAuthenticated: true
+                isAuthenticated: true  // Make sure this is set
             });
 
             return { success: true };
