@@ -158,15 +158,29 @@ func (r *mssqlRefreshTokenRepository) Create(ctx context.Context, token *domain.
               VALUES (@p1, @p2, @p3, @p4)`
 
 	// Debug logging
-	fmt.Printf("Creating refresh token - TokenID: %s, UserID: %s\n",
+	fmt.Printf("Given refresh token - TokenID: %s, UserID: %s\n",
 		token.TokenID.String(), token.UserID.String())
 
-	// Use UUIDs directly without conversion
-	_, err := r.conn.ExecContext(
+	// Convert UUIDs to SQL Server format
+	sqlTokenID, err := SwapUUIDFormat(token.TokenID)
+	if err != nil {
+		return fmt.Errorf("error converting TokenID: %w", err)
+	}
+
+	sqlUserID, err := SwapUUIDFormat(token.UserID)
+	if err != nil {
+		return fmt.Errorf("error converting UserID: %w", err)
+	}
+
+	// Debug logging
+	fmt.Printf("Creating refresh token after UUID conversion - TokenID: %s, UserID: %s\n",
+		token.TokenID.String(), token.UserID.String())
+
+	_, err = r.conn.ExecContext(
 		ctx,
 		query,
-		token.TokenID,
-		token.UserID,
+		sqlTokenID,
+		sqlUserID,
 		token.Expires,
 		token.CreatedAt,
 	)
