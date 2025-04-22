@@ -73,6 +73,12 @@ func (r *mssqlUserAccountRepository) GetAll(ctx context.Context) ([]domain.UserA
 // Returns a pointer to the user account if found, domain.ErrNotFound if no matching account exists,
 // or another error if the database operation fails.
 func (r *mssqlUserAccountRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.UserAccount, error) {
+	// Convert UUID to SQL Server format before query
+	sqlID, err := SwapUUIDFormat(id)
+	if err != nil {
+		return nil, fmt.Errorf("error converting UUID format: %w", err)
+	}
+
 	query := `SELECT UserID, PasswordHash, LastLogin, IsActive, FailedLoginAttempts, IsLocked, LockoutEnd, CreatedAt
               FROM auth.UserAccount 
               WHERE UserID = @p1`
@@ -80,7 +86,7 @@ func (r *mssqlUserAccountRepository) GetByID(ctx context.Context, id uuid.UUID) 
 	var account domain.UserAccount
 	var lastLogin, lockoutEnd sql.NullTime
 
-	err := r.conn.QueryRowContext(ctx, query, id).Scan(
+	err = r.conn.QueryRowContext(ctx, query, sqlID).Scan(
 		&account.UserID,
 		&account.PasswordHash,
 		&lastLogin,
@@ -96,6 +102,12 @@ func (r *mssqlUserAccountRepository) GetByID(ctx context.Context, id uuid.UUID) 
 			return nil, domain.ErrNotFound
 		}
 		return nil, err
+	}
+
+	// Convert UUID back to standard format after retrieval
+	account.UserID, err = SwapUUIDFormat(account.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("error converting UserID UUID: %w", err)
 	}
 
 	if lastLogin.Valid {
