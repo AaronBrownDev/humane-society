@@ -11,21 +11,37 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const initAuth = async () => {
             try {
+                console.log("Initializing auth context...");
                 const token = localStorage.getItem('accessToken');
+
                 if (token) {
-                    // Validate token by refreshing it
-                    const response = await authService.refreshToken();
+                    console.log("Found token in storage, attempting to validate");
 
-                    // Store new token
-                    localStorage.setItem('accessToken', response.accessToken);
+                    try {
+                        // Validate token by refreshing it
+                        const response = await authService.refreshToken();
+                        console.log("Token refresh successful", response);
 
-                    setAuth({
-                        accessToken: response.accessToken,
-                        userId: response.userId,
-                        isAuthenticated: true
-                    });
+                        // Store new token
+                        localStorage.setItem('accessToken', response.accessToken);
+
+                        setAuth({
+                            accessToken: response.accessToken,
+                            userId: response.userId,
+                            isAuthenticated: true
+                        });
+                    } catch (refreshError) {
+                        console.error("Token refresh failed:", refreshError);
+                        // Invalid or expired token, clear it
+                        localStorage.removeItem('accessToken');
+                        setAuth({});
+                    }
+                } else {
+                    console.log("No token found in storage");
+                    setAuth({});
                 }
             } catch (error) {
+                console.error("Auth initialization error:", error);
                 // Invalid token, clear it
                 localStorage.removeItem('accessToken');
                 setAuth({});
@@ -40,7 +56,10 @@ export const AuthProvider = ({ children }) => {
     // Login function
     const login = async (email, password) => {
         try {
+            console.log("Login attempt for:", email);
+
             const response = await authService.login({ email, password });
+            console.log("Login successful:", response);
 
             // Store token in localStorage
             localStorage.setItem('accessToken', response.accessToken);
@@ -54,24 +73,44 @@ export const AuthProvider = ({ children }) => {
 
             return { success: true };
         } catch (error) {
-            return { success: false, error: error.message || 'Login failed' };
+            console.error("Login error:", error);
+            return {
+                success: false,
+                error: typeof error === 'string'
+                    ? error
+                    : error.message || 'Login failed'
+            };
         }
     };
 
     // Register function
     const register = async (userData) => {
         try {
+            console.log("Registration attempt for:", userData.email);
+
             const response = await authService.register(userData);
+            console.log("Registration successful:", response);
+
             return { success: true, userId: response.userId };
         } catch (error) {
-            return { success: false, error: error.message || 'Registration failed' };
+            console.error("Registration error:", error);
+            return {
+                success: false,
+                error: typeof error === 'string'
+                    ? error
+                    : error.message || 'Registration failed'
+            };
         }
     };
 
     // Logout function
     const logout = async () => {
         try {
+            console.log("Logging out...");
             await authService.logout();
+            console.log("Logout successful");
+        } catch (error) {
+            console.error("Logout error:", error);
         } finally {
             // Always clear local state even if server logout fails
             localStorage.removeItem('accessToken');

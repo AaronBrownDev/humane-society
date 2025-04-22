@@ -8,6 +8,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"log"
+	"os"
 	"time"
 )
 
@@ -21,6 +23,7 @@ type AuthService struct {
 	jwtSecret         []byte
 	jwtExpiryMinutes  int
 	refreshExpiryDays int
+	logger            *log.Logger
 }
 
 // NewAuthService initializes and returns a new instance of AuthService with the provided repositories and configuration.
@@ -34,6 +37,7 @@ func NewAuthService(personRepo domain.PersonRepository, userRepo domain.UserAcco
 		jwtSecret:         jwtSecret,
 		jwtExpiryMinutes:  jwtExpiryMinutes,
 		refreshExpiryDays: refreshExpiryDays,
+		logger:            log.New(os.Stdout, "auth-service: ", log.LstdFlags),
 	}
 }
 
@@ -71,16 +75,22 @@ type AuthResponse struct {
 
 // Login authenticates the user's credentials and returns an AuthResponse if the credentials are valid.
 func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*AuthResponse, error) {
+	// Find the person by email address
+	s.logger.Printf("Attempting login for email: %s", req.Email)
 
-	// TODO could avoid having a person repo here if UserAccount has email column might be able to implement this with a join instead in the UserAccount repository.
-	// TODO might want to expand on the error messages here to be more specific.
 	person, err := s.personRepo.GetByEmail(ctx, req.Email)
 	if err != nil {
+		s.logger.Printf("Error finding person by email %s: %v", req.Email, err)
 		return nil, errors.New("invalid email")
 	}
 
+	// Log the personID for debugging
+	s.logger.Printf("Found person with ID: %s", person.PersonID.String())
+
+	// Find the user account by personID
 	userAccount, err := s.userRepo.GetByID(ctx, person.PersonID)
 	if err != nil {
+		s.logger.Printf("Error finding user account for personID %s: %v", person.PersonID.String(), err)
 		return nil, errors.New("no user account found")
 	}
 
@@ -92,8 +102,13 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*AuthRespons
 		return nil, errors.New("account is not active")
 	}
 
+	// Log password comparison attempt
+	s.logger.Printf("Comparing password hash for user: %s", person.EmailAddress)
+
 	// if the password is incorrect
 	if err := bcrypt.CompareHashAndPassword([]byte(userAccount.PasswordHash), []byte(req.Password)); err != nil {
+		s.logger.Printf("Invalid password for user: %s, error: %v", person.EmailAddress, err)
+
 		userAccount.FailedLoginAttempts++
 
 		// locks account after 5 failed attempts
@@ -102,7 +117,10 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*AuthRespons
 			userAccount.LockoutEnd = time.Now().Add(time.Minute * 5)
 		}
 
-		s.userRepo.Update(ctx, *userAccount)
+		_, updateErr := s.userRepo.Update(ctx, *userAccount)
+		if updateErr != nil {
+			s.logger.Printf("Failed to update account after failed login: %v", updateErr)
+		}
 
 		return nil, errors.New("invalid password")
 	}
@@ -111,15 +129,23 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*AuthRespons
 	userAccount.FailedLoginAttempts = 0
 	userAccount.IsLocked = false
 	userAccount.LastLogin = time.Now()
-	s.userRepo.Update(ctx, *userAccount)
+	_, err = s.userRepo.Update(ctx, *userAccount)
+	if err != nil {
+		s.logger.Printf("Failed to update login timestamp: %v", err)
+		// Continue anyway, this is not critical
+	}
+
+	s.logger.Printf("Login successful for user: %s", person.EmailAddress)
 
 	accessToken, expiresAt, err := s.generateAccessToken(userAccount.UserID)
 	if err != nil {
+		s.logger.Printf("Error generating access token: %v", err)
 		return nil, errors.New("error generating access token")
 	}
 
 	refreshToken, err := s.generateRefreshToken(ctx, userAccount.UserID)
 	if err != nil {
+		s.logger.Printf("Error generating refresh token: %v", err)
 		return nil, errors.New("error generating refresh token")
 	}
 
@@ -133,8 +159,23 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*AuthRespons
 
 // Register creates a new UserAccount based on the provided Person and password, and persists it in the repositories.
 func (s *AuthService) Register(ctx context.Context, req RegisterRequest) (*domain.UserAccount, error) {
+	s.logger.Printf("Registration attempt for email: %s", req.EmailAddress)
+
+	// Check if email already exists
+	existingPerson, err := s.personRepo.GetByEmail(ctx, req.EmailAddress)
+	if err == nil && existingPerson != nil {
+		s.logger.Printf("Email already exists: %s", req.EmailAddress)
+		return nil, errors.New("email address already in use")
+	} else if err != nil && !errors.Is(err, domain.ErrNotFound) {
+		// Only return error if it's not a "not found" error
+		s.logger.Printf("Error checking existing email: %v", err)
+		return nil, fmt.Errorf("error checking email: %w", err)
+	}
+
+	// Create new person record
+	personID := uuid.New()
 	person := domain.Person{
-		PersonID:        uuid.New(),
+		PersonID:        personID,
 		FirstName:       req.FirstName,
 		LastName:        req.LastName,
 		BirthDate:       req.BirthDate,
@@ -144,20 +185,24 @@ func (s *AuthService) Register(ctx context.Context, req RegisterRequest) (*domai
 		PhoneNumber:     req.PhoneNumber,
 	}
 
+	s.logger.Printf("Creating person with ID: %s", personID.String())
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
+		s.logger.Printf("Failed to hash password: %v", err)
 		return nil, errors.New("failed to hash password")
 	}
 
-	// TODO might want to implement create func for person and userAccount.
-	// TODO might create orphan Person if create UserAccount fails. Need to eventually handle that edge case.
+	// Create person record
 	err = s.personRepo.Create(ctx, &person)
 	if err != nil {
-		return nil, errors.New("failed to create underlying person constraint")
+		s.logger.Printf("Failed to create person record: %v", err)
+		return nil, fmt.Errorf("failed to create person record: %w", err)
 	}
 
+	// Create user account with same ID
 	userAccount := domain.UserAccount{
-		UserID:              person.PersonID,
+		UserID:              personID, // Use the same ID
 		PasswordHash:        string(hashedPassword),
 		IsActive:            true,
 		FailedLoginAttempts: 0,
@@ -165,36 +210,61 @@ func (s *AuthService) Register(ctx context.Context, req RegisterRequest) (*domai
 		CreatedAt:           time.Now(),
 	}
 
+	s.logger.Printf("Creating user account with ID: %s", personID.String())
+
 	result, err := s.userRepo.Create(ctx, userAccount)
 	if err != nil {
-		return nil, errors.New("failed to create user account")
+		s.logger.Printf("Failed to create user account: %v", err)
+		// Try to clean up the orphaned person record
+		deleteErr := s.personRepo.Delete(ctx, personID)
+		if deleteErr != nil {
+			s.logger.Printf("Failed to clean up orphaned person record: %v", deleteErr)
+		}
+		return nil, fmt.Errorf("failed to create user account: %w", err)
 	}
 
-	// TODO this could return userAccount if plan to change create func
+	// Assign "Public" role to the new user
+	roleService := NewRoleService(s.roleRepo, s.userRoleRepo)
+	err = roleService.AssignRoleToUser(ctx, personID, "Public")
+	if err != nil {
+		s.logger.Printf("Failed to assign Public role: %v", err)
+		// This is not critical to registration, so just log it and continue
+	}
+
+	s.logger.Printf("Successfully registered user with email: %s, ID: %s", req.EmailAddress, personID.String())
+
 	return &result, nil
 }
 
 // RefreshAccessToken refreshes the access token for the provided refresh token, returning a new AuthResponse if the refresh token is valid.
 func (s *AuthService) RefreshAccessToken(ctx context.Context, req RefreshTokenRequest) (*AuthResponse, error) {
+	s.logger.Printf("Token refresh attempt for token ID: %s", req.RefreshTokenID)
+
 	refreshTokenID, err := uuid.Parse(req.RefreshTokenID)
 	if err != nil {
+		s.logger.Printf("Invalid refresh token format: %v", err)
 		return nil, errors.New("invalid refresh token format")
 	}
 
 	refreshToken, err := s.validateRefreshToken(ctx, refreshTokenID)
 	if err != nil {
+		s.logger.Printf("Failed to validate refresh token: %v", err)
 		return nil, fmt.Errorf("failed to validate refresh token: %w", err)
 	}
 
 	accessToken, expiresAt, err := s.generateAccessToken(refreshToken.UserID)
 	if err != nil {
+		s.logger.Printf("Failed to generate new access token: %v", err)
 		return nil, fmt.Errorf("failed to generate token: %w", err)
 	}
 
 	newRefreshToken, err := s.rotateRefreshToken(ctx, refreshToken)
 	if err != nil {
+		s.logger.Printf("Failed to rotate refresh token: %v", err)
 		return nil, fmt.Errorf("failed to rotate refresh token: %w", err)
 	}
+
+	s.logger.Printf("Successfully refreshed token for user ID: %s", refreshToken.UserID.String())
 
 	return &AuthResponse{
 		AccessToken:  accessToken,

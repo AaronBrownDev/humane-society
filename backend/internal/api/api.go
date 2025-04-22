@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -128,12 +129,45 @@ func (a *api) respondError(w http.ResponseWriter, code int, message string) {
 	a.respondJSON(w, code, map[string]string{"error": message})
 }
 
+// corsMiddleware handles Cross-Origin Resource Sharing (CORS) for the API
+// It correctly configures headers for secure cross-origin requests with credentials
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		// Get allowed origins from environment or use default
+		allowedOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
+		if allowedOrigins == "" {
+			allowedOrigins = "http://localhost:5173" // Default for local development
+		}
+
+		// Check if the request origin is allowed
+		origin := r.Header.Get("Origin")
+		if origin != "" {
+			// Check if origin matches any allowed origin
+			originAllowed := false
+			for _, allowedOrigin := range strings.Split(allowedOrigins, ",") {
+				if origin == strings.TrimSpace(allowedOrigin) {
+					originAllowed = true
+					break
+				}
+			}
+
+			if originAllowed {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+			} else {
+				// If origin is not allowed, default to the first allowed origin
+				// This is not ideal but better than "*" which would prevent credentials
+				w.Header().Set("Access-Control-Allow-Origin", strings.TrimSpace(strings.Split(allowedOrigins, ",")[0]))
+			}
+		} else {
+			// If no origin header, use the first allowed origin
+			w.Header().Set("Access-Control-Allow-Origin", strings.TrimSpace(strings.Split(allowedOrigins, ",")[0]))
+		}
+
+		// Essential CORS headers
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Access-Control-Max-Age", "86400") // 24 hours
 
 		// Handle preflight requests
 		if r.Method == "OPTIONS" {

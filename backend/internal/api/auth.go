@@ -1,3 +1,5 @@
+// auth.go - Updated authentication API handlers
+
 package api
 
 import (
@@ -15,6 +17,7 @@ import (
 func (a *api) registerHandler(w http.ResponseWriter, r *http.Request) {
 	var req services.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		a.logger.Printf("Invalid request format: %v", err)
 		a.respondError(w, http.StatusBadRequest, "Invalid request format")
 		return
 	}
@@ -22,6 +25,7 @@ func (a *api) registerHandler(w http.ResponseWriter, r *http.Request) {
 	// Basic validation
 	if req.FirstName == "" || req.LastName == "" || req.EmailAddress == "" ||
 		req.PhysicalAddress == "" || req.MailingAddress == "" || req.Password == "" {
+		a.logger.Printf("Missing required fields in registration request")
 		a.respondError(w, http.StatusBadRequest, "Missing required fields")
 		return
 	}
@@ -33,10 +37,16 @@ func (a *api) registerHandler(w http.ResponseWriter, r *http.Request) {
 	userAccount, err := a.authService.Register(ctx, req)
 	if err != nil {
 		a.logger.Printf("Error registering user: %v", err)
-		a.respondError(w, http.StatusInternalServerError, "Failed to register user")
+		// Return more specific error messages
+		if err.Error() == "email address already in use" {
+			a.respondError(w, http.StatusConflict, "Email address already in use")
+		} else {
+			a.respondError(w, http.StatusInternalServerError, "Failed to register user")
+		}
 		return
 	}
 
+	a.logger.Printf("User registered successfully: %s", userAccount.UserID)
 	a.respondJSON(w, http.StatusCreated, map[string]interface{}{
 		"message": "User registered successfully",
 		"userId":  userAccount.UserID,
@@ -49,12 +59,14 @@ func (a *api) registerHandler(w http.ResponseWriter, r *http.Request) {
 func (a *api) loginHandler(w http.ResponseWriter, r *http.Request) {
 	var req services.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		a.logger.Printf("Invalid login request format: %v", err)
 		a.respondError(w, http.StatusBadRequest, "Invalid request format")
 		return
 	}
 
 	// Basic validation
 	if req.Email == "" || req.Password == "" {
+		a.logger.Printf("Missing email or password in login request")
 		a.respondError(w, http.StatusBadRequest, "Email and password are required")
 		return
 	}
@@ -62,11 +74,28 @@ func (a *api) loginHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
 	defer cancel()
 
+	a.logger.Printf("Login attempt for email: %s", req.Email)
+
 	// Call the auth service to authenticate the user
 	authResp, err := a.authService.Login(ctx, req)
 	if err != nil {
 		a.logger.Printf("Login failed: %v", err)
-		a.respondError(w, http.StatusUnauthorized, "Invalid credentials")
+
+		// Return appropriate HTTP status based on the error
+		switch err.Error() {
+		case "invalid email":
+			a.respondError(w, http.StatusUnauthorized, "Invalid email")
+		case "no user account found":
+			a.respondError(w, http.StatusUnauthorized, "User account not found")
+		case "invalid password":
+			a.respondError(w, http.StatusUnauthorized, "Invalid password")
+		case "account is locked":
+			a.respondError(w, http.StatusForbidden, "Account is locked")
+		case "account is not active":
+			a.respondError(w, http.StatusForbidden, "Account is not active")
+		default:
+			a.respondError(w, http.StatusInternalServerError, "Authentication failed")
+		}
 		return
 	}
 
@@ -75,11 +104,13 @@ func (a *api) loginHandler(w http.ResponseWriter, r *http.Request) {
 		Name:     "refresh_token",
 		Value:    authResp.RefreshToken,
 		HttpOnly: true,
-		Secure:   true, // Set to true in production with HTTPS
-		SameSite: http.SameSiteStrictMode,
+		Secure:   true,                  // Set to true in production with HTTPS
+		SameSite: http.SameSiteNoneMode, // Required for cross-origin requests
 		Path:     "/",
 		Expires:  time.Now().Add(time.Hour * 24 * 7), // 7 days
 	})
+
+	a.logger.Printf("Login successful for user: %s", authResp.UserID)
 
 	// Return only the access token in the response body
 	a.respondJSON(w, http.StatusOK, map[string]interface{}{
@@ -96,9 +127,12 @@ func (a *api) refreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 	// Get refresh token from cookie
 	cookie, err := r.Cookie("refresh_token")
 	if err != nil {
+		a.logger.Printf("Refresh token not found in cookie: %v", err)
 		a.respondError(w, http.StatusBadRequest, "Refresh token not found")
 		return
 	}
+
+	a.logger.Printf("Token refresh request received with token ID: %s", cookie.Value)
 
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
 	defer cancel()
@@ -120,11 +154,13 @@ func (a *api) refreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 		Name:     "refresh_token",
 		Value:    authResp.RefreshToken,
 		HttpOnly: true,
-		Secure:   true, // Set to true in production with HTTPS
-		SameSite: http.SameSiteStrictMode,
+		Secure:   true,                  // Set to true in production with HTTPS
+		SameSite: http.SameSiteNoneMode, // Required for cross-origin requests
 		Path:     "/",
 		Expires:  time.Now().Add(time.Hour * 24 * 7), // 7 days
 	})
+
+	a.logger.Printf("Token refresh successful for user: %s", authResp.UserID)
 
 	// Return only the access token in the response body
 	a.respondJSON(w, http.StatusOK, map[string]interface{}{
@@ -149,8 +185,14 @@ func (a *api) logoutHandler(w http.ResponseWriter, r *http.Request) {
 			if revokeErr := a.authService.RevokeToken(ctx, tokenID); revokeErr != nil {
 				// Log the error but continue with logout
 				a.logger.Printf("Error revoking token: %v", revokeErr)
+			} else {
+				a.logger.Printf("Successfully revoked token: %s", tokenID)
 			}
+		} else {
+			a.logger.Printf("Error parsing token ID: %v", parseErr)
 		}
+	} else {
+		a.logger.Printf("No refresh token cookie found for logout")
 	}
 
 	// Clear the refresh token cookie
@@ -159,11 +201,12 @@ func (a *api) logoutHandler(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteNoneMode,
 		Path:     "/",
 		MaxAge:   -1, // Delete the cookie
 	})
 
+	a.logger.Printf("User logged out successfully")
 	a.respondJSON(w, http.StatusOK, map[string]string{
 		"message": "Logged out successfully",
 	})
