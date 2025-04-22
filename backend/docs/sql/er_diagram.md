@@ -10,7 +10,7 @@ erDiagram
     UserAccount ||--o{ UserRole : "has"
     UserAccount ||--o{ RefreshToken : "has"
     Role ||--o{ UserRole : "assigned to"
-    RefreshToken ||--o{ RefreshToken : "replaces"
+    RefreshToken ||--o| RefreshToken : "replaced by"
 
     Dog ||--o{ DogPrescription : "receives"
     Medicine ||--o{ DogPrescription : "used in"
@@ -35,213 +35,228 @@ erDiagram
 
     Volunteer ||--o{ VolunteerSchedule : "is scheduled for"
 
+    ChangeLog }|--|| Dog : "tracks changes to"
+
     Person {
-        uuid PersonID PK
-        string FirstName
-        string LastName
-        date BirthDate
+uuid PersonID PK
+string FirstName
+string LastName
+date BirthDate NULL
         string PhysicalAddress
-        string MailingAddress
-        string EmailAddress
-        string PhoneNumber
+string MailingAddress
+string EmailAddress
+string PhoneNumber NULL
+}
+
+Adopter {
+uuid AdopterID PK, FK
+bool HasPetAllergies
+bool HasSurrenderedPets
+string HomeStatus
+}
+
+Volunteer {
+uuid VolunteerID PK, FK
+string VolunteerPosition
+date StartDate
+date EndDate NULL
+string EmergencyContactName NULL
+string EmergencyContactPhone NULL
+bool IsActive
+}
+
+PetOwner {
+uuid PetOwnerID PK, FK
+uuid VeterinarianID FK NULL
+bool HasSterilizedPets
+bool HasVaccinatedPets
+bool UsesVetHeartWormPrevention
     }
 
-    Adopter {
-        uuid AdopterID PK, FK
-        bool HasPetAllergies
-        bool HasSurrenderedPets
-        string HomeStatus
+PetSurrenderer {
+uuid SurrendererID PK, FK
+}
+
+Veterinarian {
+uuid VeterinarianID PK, FK
+}
+
+Dog {
+uuid DogID PK
+string Name
+date IntakeDate
+date EstimatedBirthDate
+string Breed
+string Sex
+string Color
+int CageNumber
+bool IsAdopted
+}
+
+Medicine {
+int MedicineID PK
+string Name
+string Manufacturer
+string Description NULL
+string DosageUnit NULL
+}
+
+DogPrescription {
+int PrescriptionID PK
+uuid DogID FK
+int MedicineID FK
+decimal Dosage
+string Frequency NULL
+date StartDate
+date EndDate NULL
+string Notes NULL
+uuid VetPrescriberID FK NULL
+}
+
+ItemCatalog {
+uuid ItemID PK
+string Name
+string Category
+string Description NULL
+int MinimumQuantity
+bool IsActive
     }
 
-    Volunteer {
-        uuid VolunteerID PK, FK
-        string VolunteerPosition
-        date StartDate
-        date EndDate
-        string EmergencyContactName
-        string EmergencyContactPhone
-        bool IsActive
-    }
+Supply {
+int SupplyID PK
+uuid ItemID FK
+int Quantity
+string StorageLocation NULL
+date ExpirationDate NULL
+string BatchNumber NULL
+date AcquisitionDate NULL
+}
 
-    PetOwner {
-        uuid PetOwnerID PK, FK
-        uuid VeterinarianID FK
-        bool HasSterilizedPets
-        bool HasVaccinatedPets
-        bool UsesVetHeartWormPrevention
-    }
+PetOwnerPet {
+int PetID PK
+uuid PetOwnerID FK
+string Name
+string Type
+string Breed
+string Sex
+date OwnershipDate
+string LivingEnvironment
+}
 
-    PetSurrenderer {
-        uuid SurrendererID PK, FK
-    }
+SurrenderForm {
+int SurrenderFormID PK
+uuid SurrendererID FK
+datetime SubmissionDate
+string DogName
+int DogAge
+decimal WeightInPounds
+string Sex
+string Breed NULL
+string Color NULL
+string LivingEnvironment
+date OwnershipDate
+uuid VeterinarianID FK NULL
+date LastVetVisitDate NULL
+bool IsGoodWithChildren
+bool IsGoodWithDogs
+bool IsGoodWithCats
+bool IsGoodWithStrangers
+bool IsHouseTrained
+bool IsSterilized
+string MicroChipNumber NULL
+string MedicalProblems NULL
+string BiteHistory NULL
+string SurrenderReason
+uuid ProcessedByVolunteerID FK NULL
+datetime ProcessingDate NULL
+uuid ResultingDogID FK NULL
+string Status
+}
 
-    Veterinarian {
-        uuid VeterinarianID PK, FK
-    }
+AdoptionForm {
+int AdoptionFormID PK
+uuid AdopterID FK
+uuid DogID FK
+datetime SubmissionDate
+uuid ProcessedByVolunteerID FK NULL
+datetime ProcessingDate NULL
+string Status
+string RejectionReason NULL
+}
 
-    Dog {
-        uuid DogID PK
-        string Name
-        date IntakeDate
-        date EstimatedBirthDate
-        string Breed
-        string Sex
-        string Color
-        int CageNumber
-        bool IsAdopted
-    }
+VolunteerForm {
+int VolunteerFormID PK
+uuid ApplicantID FK
+datetime SubmissionDate
+bool SupportsAnimalWelfareEducation
+string AvailableShifts NULL
+bool SupportsResponsibleBreeding
+bool AcceptsCleaningDuties
+bool AcceptsDogCare
+bool HasDogAllergies
+bool HasPhysicalLimitations
+bool IsForCommunityService
+int RequiredServiceHours NULL
+string ReferralSource
+string CommentsAndQuestions NULL
+uuid ProcessedByVolunteerID FK NULL
+datetime ProcessingDate NULL
+string Status
+string RejectionReason NULL
+}
 
-    Medicine {
-        int MedicineID PK
-        string Name
-        string Manufacturer
-        string Description
-        string DosageUnit
-    }
+VolunteerSchedule {
+int ScheduleID PK
+uuid VolunteerID FK
+date ScheduleDate
+time StartTime
+time EndTime
+string TaskDescription NULL
+string Status
+}
 
-    DogPrescription {
-        int PrescriptionID PK
-        uuid DogID FK
-        int MedicineID FK
-        decimal Dosage
-        string Frequency
-        date StartDate
-        date EndDate
-        string Notes
-        uuid VetPrescriberID FK
-    }
+UserAccount {
+uuid UserID PK, FK
+string PasswordHash
+datetime LastLogin NULL
+bool IsActive
+int FailedLoginAttempts
+bool IsLocked
+datetime LockoutEnd NULL
+datetime CreatedAt
+}
 
-    ItemCatalog {
-        uuid ItemID PK
-        string Name
-        string Category
-        string Description
-        int MinimumQuantity
-        bool IsActive
-    }
+Role {
+int RoleID PK
+string Name
+string Description NULL
+}
 
-    Supply {
-        int SupplyID PK
-        uuid ItemID FK
-        int Quantity
-        string StorageLocation
-        date ExpirationDate
-        string BatchNumber
-        date AcquisitionDate
-    }
+UserRole {
+uuid UserID PK, FK
+int RoleID PK, FK
+datetime AssignedAt
+}
 
-    PetOwnerPet {
-        int PetID PK
-        uuid PetOwnerID FK
-        string Name
-        string Type
-        string Breed
-        string Sex
-        date OwnershipDate
-        string LivingEnvironment
-    }
+RefreshToken {
+uuid TokenID PK
+uuid UserID FK
+datetime Expires
+datetime CreatedAt
+datetime RevokedAt NULL
+uuid ReplacedByTokenID FK NULL
+}
 
-    SurrenderForm {
-        int SurrenderFormID PK
-        uuid SurrendererID FK
-        datetime SubmissionDate
-        string DogName
-        int DogAge
-        decimal WeightInPounds
-        string Sex
-        string Breed
-        string Color
-        string LivingEnvironment
-        date OwnershipDate
-        uuid VeterinarianID FK
-        date LastVetVisitDate
-        bool IsGoodWithChildren
-        bool IsGoodWithDogs
-        bool IsGoodWithCats
-        bool IsGoodWithStrangers
-        bool IsHouseTrained
-        bool IsSterilized
-        string MicroChipNumber
-        string MedicalProblems
-        string BiteHistory
-        string SurrenderReason
-        uuid ProcessedByVolunteerID FK
-        datetime ProcessingDate
-        uuid ResultingDogID FK
-        string Status
-    }
-
-    AdoptionForm {
-        int AdoptionFormID PK
-        uuid AdopterID FK
-        uuid DogID FK
-        datetime SubmissionDate
-        uuid ProcessedByVolunteerID FK
-        datetime ProcessingDate
-        string Status
-        string RejectionReason
-    }
-
-    VolunteerForm {
-        int VolunteerFormID PK
-        uuid ApplicantID FK
-        datetime SubmissionDate
-        bool SupportsAnimalWelfareEducation
-        string AvailableShifts
-        bool SupportsResponsibleBreeding
-        bool AcceptsCleaningDuties
-        bool AcceptsDogCare
-        bool HasDogAllergies
-        bool HasPhysicalLimitations
-        bool IsForCommunityService
-        int RequiredServiceHours
-        string ReferralSource
-        string CommentsAndQuestions
-        uuid ProcessedByVolunteerID FK
-        datetime ProcessingDate
-        string Status
-        string RejectionReason
-    }
-
-    VolunteerSchedule {
-        int ScheduleID PK
-        uuid VolunteerID FK
-        date ScheduleDate
-        time StartTime
-        time EndTime
-        string TaskDescription
-        string Status
-    }
-
-    UserAccount {
-        uuid UserID PK, FK
-        string PasswordHash
-        datetime LastLogin
-        bool IsActive
-        int FailedLoginAttempts
-        bool IsLocked
-        datetime LockoutEnd
-        datetime CreatedAt
-    }
-
-    Role {
-        int RoleID PK
-        string Name
-        string Description
-    }
-
-    UserRole {
-        uuid UserID PK, FK
-        int RoleID PK, FK
-        datetime AssignedAt
-    }
-
-    RefreshToken {
-        uuid TokenID PK
-        uuid UserID FK
-        datetime Expires
-        datetime CreatedAt
-        datetime RevokedAt
-        uuid ReplacedByTokenID FK
-    }
+ChangeLog {
+int LogID PK
+string TableName
+string PrimaryKeyColumn
+string PrimaryKeyValue
+string ColumnName
+string OldValue NULL
+string NewValue NULL
+datetime ChangeDate
+string ChangedBy
+char AuditActionType
+}
 ```
