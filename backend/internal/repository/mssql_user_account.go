@@ -127,7 +127,13 @@ func (r *mssqlUserAccountRepository) GetByID(ctx context.Context, id uuid.UUID) 
 func (r *mssqlUserAccountRepository) Create(ctx context.Context, userAccount domain.UserAccount) (domain.UserAccount, error) {
 	query := `EXEC auth.CreatePublicUser @UserID = @p1, @PasswordHash = @p2`
 
-	_, err := r.conn.ExecContext(ctx, query, userAccount.UserID, userAccount.PasswordHash)
+	// Convert UUID to SQL Server format before passing to stored procedure
+	sqlUserID, err := SwapUUIDFormat(userAccount.UserID)
+	if err != nil {
+		return domain.UserAccount{}, fmt.Errorf("error converting UserID UUID: %w", err)
+	}
+
+	_, err = r.conn.ExecContext(ctx, query, sqlUserID, userAccount.PasswordHash)
 	if err != nil {
 		return domain.UserAccount{}, fmt.Errorf("error creating user account: %w", err)
 	}
