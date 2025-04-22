@@ -48,13 +48,13 @@ export default function App() {
             </Route>
 
             {/* Protected Admin Routes */}
-            <Route element={<ProtectedRoute />}>
+            {/*<Route element={<ProtectedRoute />}>*/}
                 <Route element={<AdminLayout />}>
                     <Route path="/Dashboard" element={<Dashboard />} />
                     <Route path="/ManageDogs" element={<ManageDogs />} />
                     <Route path="/ManageUsers" element={<ManageUsers />} />
                 </Route>
-            </Route>
+            {/*</Route>*/}
         </Routes>
     );
 }
