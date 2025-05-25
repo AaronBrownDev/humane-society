@@ -100,7 +100,7 @@ func (r *mssqlRoleRepository) Create(ctx context.Context, role *domain.Role) (*d
 	}
 
 	// Check if a role with the same name already exists
-	existingRole, err := r.GetByName(ctx, role.Name)
+	existingRole, err := r.getByName(ctx, role.Name)
 	if err != nil && !errors.Is(err, domain.ErrNotFound) {
 		return nil, err
 	}
@@ -140,7 +140,7 @@ func (r *mssqlRoleRepository) Update(ctx context.Context, role *domain.Role) (*d
 
 	// Check if the new name conflicts with an existing role
 	if role.Name != "" {
-		existingRole, err := r.GetByName(ctx, role.Name)
+		existingRole, err := r.getByName(ctx, role.Name)
 		if err != nil && !errors.Is(err, domain.ErrNotFound) {
 			return nil, err
 		}
@@ -196,4 +196,31 @@ func (r *mssqlRoleRepository) Delete(ctx context.Context, id int) error {
 	}
 
 	return nil
+}
+
+
+// Helper Functions
+
+// getByName retrieves a role with the specified name.
+// Returns a pointer to the role if found, domain.ErrNotFound if no matching role exists,
+// or another error if the database operation fails.
+func (r *mssqlRoleRepository) getByName(ctx context.Context, name string) (*domain.Role, error) {
+	query := `SELECT RoleID, Name, Description
+			FROM auth.Role
+			WHERE Name = @p1`
+	
+	var role domain.Role
+	err := r.conn.QueryRowContext(ctx, query, name).Scan(
+		&role.RoleID,
+		&role.Name,
+		&role.Description,
+	)
+	if err != nil {
+		if errors.Is(err, errors.New("sql: no rows in result set")) {
+			return nil, domain.ErrNotFound
+		}
+		return nil, err
+	}
+
+	return &role, nil 
 }
